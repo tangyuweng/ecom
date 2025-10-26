@@ -9,13 +9,13 @@ import (
 )
 
 type User struct {
-	ID         string
-	Email      string
-	Password   string
-	Name       string
-	Phone      string
-	Created_at time.Time
-	Updated_at time.Time
+	ID        string
+	Email     string
+	Password  string
+	Name      string
+	Phone     string
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 var (
@@ -50,12 +50,12 @@ func NewUser(email, password, name, phone string) (*User, error) {
 	now := time.Now()
 
 	return &User{
-		Email:      email,
-		Password:   hashPwd,
-		Name:       name,
-		Phone:      phone,
-		Created_at: now,
-		Updated_at: now,
+		Email:     email,
+		Password:  hashPwd,
+		Name:      name,
+		Phone:     phone,
+		CreatedAt: now,
+		UpdatedAt: now,
 	}, nil
 }
 
