@@ -12,5 +12,5 @@ type UserRepository interface {
 	FindByEmail(ctx context.Context, email string) (*entity.User, error)
 	Update(ctx context.Context, user *entity.User) error
 	Delete(ctx context.Context, id string) error
-	ExistsByEmail(ctx context.Context, email string) error
+	ExistsByEmail(ctx context.Context, email string) (bool, error)
 }
