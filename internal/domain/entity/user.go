@@ -8,12 +8,20 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type UserRole string
+
+const (
+	RoleUser  UserRole = "user"
+	RoleAdmin UserRole = "admin"
+)
+
 type User struct {
 	ID        string
 	Email     string
 	Password  string
 	Name      string
 	Phone     string
+	Role      UserRole
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
@@ -54,14 +62,28 @@ func NewUser(email, password, name, phone string) (*User, error) {
 		Password:  hashPwd,
 		Name:      name,
 		Phone:     phone,
+		Role:      RoleUser,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}, nil
 }
 
+func NewAdmin(email, password, name, phone string) (*User, error) {
+	user, err := NewUser(email, password, name, phone)
+	if err != nil {
+		return nil, err
+	}
+	user.Role = RoleAdmin
+	return user, nil
+}
+
 func (u *User) CheckPassword(password string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
 	return err == nil
+}
+
+func (u *User) IsAdmin() bool {
+	return u.Role == RoleAdmin
 }
 
 func validateEmail(email string) error {

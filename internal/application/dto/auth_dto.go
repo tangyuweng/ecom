@@ -22,4 +22,5 @@ type UserSummary struct {
 	Email string `json:"email"`
 	Name  string `json:"name"`
 	Phone string `json:"phone"`
+	Role  string `json:"role"`
 }
