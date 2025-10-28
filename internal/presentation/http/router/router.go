@@ -10,7 +10,7 @@ import (
 
 func SetupRouter(
 	authUseCase *usecase.AuthUseCase,
-	jwtService *usecase.JWTService,
+	jwtService usecase.JWTService,
 ) *gin.Engine {
 	r := gin.Default()
 

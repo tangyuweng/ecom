@@ -87,7 +87,7 @@ func (u *User) IsAdmin() bool {
 }
 
 func validateEmail(email string) error {
-	if email == "" || !strings.Contains(email, "@") || !strings.Contains(email, " ") {
+	if email == "" || !strings.Contains(email, "@") {
 		return ErrInvalidEmail
 	}
 	return nil

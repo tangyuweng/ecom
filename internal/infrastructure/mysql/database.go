@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/tangyuweng/ecom/internal/infrastructure/mysql/models"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -37,4 +38,17 @@ func NewDatabase(config DatabaseConfig) (*gorm.DB, error) {
 
 	log.Println("Database connected successfully")
 	return db, nil
+}
+
+func AutoMigrate(db *gorm.DB) error {
+	log.Println("Starting database migration...")
+
+	err := db.AutoMigrate(&models.UserModel{})
+
+	if err != nil {
+		return fmt.Errorf("failed to migrate database: %w", err)
+	}
+
+	log.Println("Database migration completed successfully")
+	return nil
 }

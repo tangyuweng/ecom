@@ -56,6 +56,7 @@ func (uc *AuthUseCase) Register(ctx context.Context, req dto.RegisterRequest) (*
 			Email: user.Email,
 			Name:  user.Name,
 			Phone: user.Phone,
+			Role:  string(user.Role),
 		},
 	}, nil
 }
@@ -82,6 +83,7 @@ func (uc *AuthUseCase) Login(ctx context.Context, req dto.LoginRequest) (*dto.Au
 			Email: user.Email,
 			Name:  user.Name,
 			Phone: user.Phone,
+			Role:  string(user.Role),
 		},
 	}, nil
 }
