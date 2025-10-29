@@ -12,6 +12,7 @@ type Config struct {
 	Server ServerConfig
 	JWT    JWTConfig
 	MySQL  MySQLConfig
+	Cookie CookieConfig
 }
 
 type ServerConfig struct {
@@ -19,8 +20,9 @@ type ServerConfig struct {
 }
 
 type JWTConfig struct {
-	Secret   string
-	Duration int
+	Secret             string
+	AccessTokenExpiry  int
+	RefreshTokenExpiry int
 }
 
 type MySQLConfig struct {
@@ -29,6 +31,11 @@ type MySQLConfig struct {
 	DBName   string
 	Username string
 	Password string
+}
+
+type CookieConfig struct {
+	Domain string
+	Secure bool
 }
 
 func LoadConfig() (*Config, error) {
@@ -41,9 +48,14 @@ func LoadConfig() (*Config, error) {
 		mysqlPort = 3306
 	}
 
-	jwtDuration, err := strconv.Atoi(getEnv("JWT_DURATION", "24"))
+	accessTokenExpiry, err := strconv.Atoi(getEnv("JWT_ACCESS_TOKE_EXP", "24"))
 	if err != nil {
-		jwtDuration = 24
+		accessTokenExpiry = 24
+	}
+
+	refreshTokenExpiry, err := strconv.Atoi(getEnv("JWT_REFRESH_TOKE_EXP", "72"))
+	if err != nil {
+		refreshTokenExpiry = 72
 	}
 
 	config := &Config{
@@ -51,8 +63,9 @@ func LoadConfig() (*Config, error) {
 			Port: getEnv("SERVER_PORT", ":3000"),
 		},
 		JWT: JWTConfig{
-			Secret:   getEnv("JWT_SECRET", "default_secret"),
-			Duration: jwtDuration,
+			Secret:             getEnv("JWT_SECRET", "default_secret"),
+			AccessTokenExpiry:  accessTokenExpiry,
+			RefreshTokenExpiry: refreshTokenExpiry,
 		},
 		MySQL: MySQLConfig{
 			Host:     getEnv("MYSQL_HOST", "localhost"),
@@ -60,6 +73,10 @@ func LoadConfig() (*Config, error) {
 			DBName:   getEnv("MYSQL_DBNAME", "ecom"),
 			Username: getEnv("MYSQL_USERNAME", "root"),
 			Password: getEnv("MYSQL_PASSWORD", ""),
+		},
+		Cookie: CookieConfig{
+			Domain: getEnv("COOKIE_DOMAIN", "localhost"),
+			Secure: getEnv("COOKIE_SECURE", "false") == "true",
 		},
 	}
 

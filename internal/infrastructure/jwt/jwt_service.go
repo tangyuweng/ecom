@@ -8,8 +8,9 @@ import (
 )
 
 type JWTServiceImpl struct {
-	secretKey     string
-	tokenDuration time.Duration
+	secretKey          string
+	accessTokenExpiry  time.Duration
+	refreshTokenExpiry time.Duration
 }
 
 type Claims struct {
@@ -17,15 +18,38 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-func NewJWTService(secretKey string, tokenDuration time.Duration) *JWTServiceImpl {
+func NewJWTService(secretKey string, accessTokenExpiry, refreshTokenExpiry time.Duration) *JWTServiceImpl {
 	return &JWTServiceImpl{
-		secretKey:     secretKey,
-		tokenDuration: tokenDuration,
+		secretKey:          secretKey,
+		accessTokenExpiry:  accessTokenExpiry,
+		refreshTokenExpiry: refreshTokenExpiry,
 	}
 }
 
-func (s *JWTServiceImpl) GenerateToken(userID string) (string, error) {
-	expirationTime := time.Now().Add(s.tokenDuration)
+func (s *JWTServiceImpl) GenerateAccessToken(userID string) (string, error) {
+	expirationTime := time.Now().Add(s.accessTokenExpiry)
+
+	claims := &Claims{
+		UserID: userID,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expirationTime),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			Issuer:    "ecom-api",
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	tokenString, err := token.SignedString([]byte(s.secretKey))
+	if err != nil {
+		return "", err
+	}
+
+	return tokenString, nil
+}
+
+func (s *JWTServiceImpl) GenerateRefreshToken(userID string) (string, error) {
+	expirationTime := time.Now().Add(s.refreshTokenExpiry)
 
 	claims := &Claims{
 		UserID: userID,

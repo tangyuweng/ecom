@@ -54,11 +54,15 @@ func main() {
 
 	userRepo := mysql.NewUserRepository(db)
 
-	jwtService := jwt.NewJWTService(cfg.JWT.Secret, time.Duration(cfg.JWT.Duration))
+	jwtService := jwt.NewJWTService(
+		cfg.JWT.Secret,
+		time.Duration(cfg.JWT.AccessTokenExpiry)*time.Hour,
+		time.Duration(cfg.JWT.RefreshTokenExpiry)*time.Hour,
+	)
 
 	authUseCase := usecase.NewAuthUseCase(userRepo, jwtService)
 
-	r := router.SetupRouter(authUseCase, jwtService)
+	r := router.SetupRouter(authUseCase, jwtService, cfg)
 
 	log.Printf("Starting server on %s", cfg.Server.Port)
 	log.Printf("Swagger UI: http://localhost%s/swagger/index.html", cfg.Server.Port)

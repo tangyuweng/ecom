@@ -7,14 +7,26 @@ type RegisterRequest struct {
 	Phone    string `json:"phone" binding:"required"`
 }
 
+type RegisterResponse struct {
+	User UserSummary `json:"user"`
+}
+
 type LoginRequest struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required"`
 }
 
-type AuthResponse struct {
-	Token string      `json:"token"`
-	User  UserSummary `json:"user"`
+type LoginResponse struct {
+	AccessToken  string      `json:"access_token"`
+	RefreshToken string      `json:"refresh_token"`
+	User         UserSummary `json:"user"`
+}
+
+type RefreshTokenRequest struct {
+}
+
+type RefreshTokenResponse struct {
+	AccessToken string `json:"access_token"`
 }
 
 type UserSummary struct {

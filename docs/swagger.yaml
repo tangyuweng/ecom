@@ -1,12 +1,5 @@
 basePath: /api/v1
 definitions:
-  dto.AuthResponse:
-    properties:
-      token:
-        type: string
-      user:
-        $ref: '#/definitions/dto.UserSummary'
-    type: object
   dto.LoginRequest:
     properties:
       email:
@@ -16,6 +9,20 @@ definitions:
     required:
     - email
     - password
+    type: object
+  dto.LoginResponse:
+    properties:
+      access_token:
+        type: string
+      refresh_token:
+        type: string
+      user:
+        $ref: '#/definitions/dto.UserSummary'
+    type: object
+  dto.RefreshTokenResponse:
+    properties:
+      access_token:
+        type: string
     type: object
   dto.RegisterRequest:
     properties:
@@ -34,12 +41,15 @@ definitions:
     - password
     - phone
     type: object
+  dto.RegisterResponse:
+    properties:
+      user:
+        $ref: '#/definitions/dto.UserSummary'
+    type: object
   dto.StandardResponse:
     properties:
       data: {}
       error:
-        type: string
-      message:
         type: string
       success:
         type: boolean
@@ -92,7 +102,7 @@ paths:
             - $ref: '#/definitions/dto.StandardResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.AuthResponse'
+                  $ref: '#/definitions/dto.LoginResponse'
               type: object
         "400":
           description: 請求參數錯誤
@@ -107,6 +117,47 @@ paths:
           schema:
             $ref: '#/definitions/dto.StandardResponse'
       summary: 用戶登入
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      description: 清除 refresh token cookie
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 登出成功
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+      summary: 用戶登出
+      tags:
+      - auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: 使用 refresh token 獲取新的 access token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 刷新成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/dto.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.RefreshTokenResponse'
+              type: object
+        "401":
+          description: 無效的 refresh token
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "500":
+          description: 伺服器錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+      summary: 刷新訪問令牌
       tags:
       - auth
   /auth/register:
@@ -131,7 +182,7 @@ paths:
             - $ref: '#/definitions/dto.StandardResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.AuthResponse'
+                  $ref: '#/definitions/dto.RegisterResponse'
               type: object
         "400":
           description: 請求參數錯誤

@@ -10,7 +10,8 @@ import (
 )
 
 type JWTService interface {
-	GenerateToken(userID string) (string, error)
+	GenerateAccessToken(userID string) (string, error)
+	GenerateRefreshToken(userID string) (string, error)
 	ValidateToken(token string) (string, error)
 }
 
@@ -26,7 +27,7 @@ func NewAuthUseCase(userRepo repository.UserRepository, jwtService JWTService) *
 	}
 }
 
-func (uc *AuthUseCase) Register(ctx context.Context, req dto.RegisterRequest) (*dto.AuthResponse, error) {
+func (uc *AuthUseCase) Register(ctx context.Context, req dto.RegisterRequest) (*dto.RegisterResponse, error) {
 	exists, err := uc.userRepo.ExistsByEmail(ctx, req.Email)
 	if err != nil {
 		return nil, err
@@ -44,13 +45,7 @@ func (uc *AuthUseCase) Register(ctx context.Context, req dto.RegisterRequest) (*
 		return nil, err
 	}
 
-	token, err := uc.jwtService.GenerateToken(user.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	return &dto.AuthResponse{
-		Token: token,
+	return &dto.RegisterResponse{
 		User: dto.UserSummary{
 			ID:    user.ID,
 			Email: user.Email,
@@ -61,7 +56,7 @@ func (uc *AuthUseCase) Register(ctx context.Context, req dto.RegisterRequest) (*
 	}, nil
 }
 
-func (uc *AuthUseCase) Login(ctx context.Context, req dto.LoginRequest) (*dto.AuthResponse, error) {
+func (uc *AuthUseCase) Login(ctx context.Context, req dto.LoginRequest) (*dto.LoginResponse, error) {
 	user, err := uc.userRepo.FindByEmail(ctx, req.Email)
 	if err != nil {
 		return nil, errors.New("invalid email or password")
@@ -71,13 +66,19 @@ func (uc *AuthUseCase) Login(ctx context.Context, req dto.LoginRequest) (*dto.Au
 		return nil, errors.New("invalid email or password")
 	}
 
-	token, err := uc.jwtService.GenerateToken(user.ID)
+	accessToken, err := uc.jwtService.GenerateAccessToken(user.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	return &dto.AuthResponse{
-		Token: token,
+	refreshToken, err := uc.jwtService.GenerateRefreshToken(user.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dto.LoginResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
 		User: dto.UserSummary{
 			ID:    user.ID,
 			Email: user.Email,
@@ -86,4 +87,23 @@ func (uc *AuthUseCase) Login(ctx context.Context, req dto.LoginRequest) (*dto.Au
 			Role:  string(user.Role),
 		},
 	}, nil
+}
+
+func (uc *AuthUseCase) RefreshToken(ctx context.Context, refreshToken string) (*dto.RefreshTokenResponse, error) {
+	userID, err := uc.jwtService.ValidateToken(refreshToken)
+	if err != nil {
+		return nil, errors.New("invalid or expired refresh token")
+	}
+
+	_, err = uc.userRepo.FindByID(ctx, userID)
+	if err != nil {
+		return nil, errors.New("user not found")
+	}
+
+	newAccessToken, err := uc.jwtService.GenerateAccessToken(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dto.RefreshTokenResponse{AccessToken: newAccessToken}, nil
 }
