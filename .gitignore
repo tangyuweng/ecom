@@ -28,6 +28,11 @@ logs/
 .env
 .idea/
 
+# Docker volumes
+mysql_data/
+
+bin/
+
 # Editor/IDE
 # .idea/
 # .vscode/
