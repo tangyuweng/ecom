@@ -31,6 +31,7 @@ var (
 	ErrInvalidPassword = errors.New("password must be at least 8 characters")
 	ErrInvalidName     = errors.New("name cannot be empty")
 	ErrInvalidPhone    = errors.New("phone cannot be empty")
+	ErrUserNotFound    = errors.New("user not found")
 )
 
 func NewUser(email, password, name, phone string) (*User, error) {

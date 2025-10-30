@@ -97,7 +97,7 @@ func (uc *AuthUseCase) RefreshToken(ctx context.Context, refreshToken string) (*
 
 	_, err = uc.userRepo.FindByID(ctx, userID)
 	if err != nil {
-		return nil, errors.New("user not found")
+		return nil, entity.ErrUserNotFound
 	}
 
 	newAccessToken, err := uc.jwtService.GenerateAccessToken(userID)

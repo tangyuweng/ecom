@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/tangyuweng/ecom/internal/application/dto"
 	"github.com/tangyuweng/ecom/internal/application/usecase"
 )
 
@@ -12,18 +13,14 @@ func AuthMiddleware(jwtService usecase.JWTService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "authorization header required",
-			})
+			c.JSON(http.StatusUnauthorized, dto.ErrorResponse("authorization header required"))
 			c.Abort()
 			return
 		}
 
 		parts := strings.Split(authHeader, " ")
 		if len(parts) != 2 || parts[0] != "Bearer" {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "invalid authorization format",
-			})
+			c.JSON(http.StatusUnauthorized, dto.ErrorResponse("invalid authorization format"))
 			c.Abort()
 			return
 		}
@@ -32,9 +29,7 @@ func AuthMiddleware(jwtService usecase.JWTService) gin.HandlerFunc {
 
 		userID, err := jwtService.ValidateToken(tokenString)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "invalid or expired token",
-			})
+			c.JSON(http.StatusUnauthorized, dto.ErrorResponse("invalid or expired token"))
 			c.Abort()
 			return
 		}

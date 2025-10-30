@@ -1,5 +1,37 @@
 basePath: /api/v1
 definitions:
+  dto.CategoryListResponse:
+    properties:
+      categories:
+        items:
+          $ref: '#/definitions/dto.CategoryResponse'
+        type: array
+      total:
+        type: integer
+    type: object
+  dto.CategoryResponse:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      slug:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  dto.CreateCategoryRequest:
+    properties:
+      name:
+        type: string
+      slug:
+        type: string
+    required:
+    - name
+    - slug
+    type: object
   dto.LoginRequest:
     properties:
       email:
@@ -53,6 +85,19 @@ definitions:
         type: string
       success:
         type: boolean
+    type: object
+  dto.UpdateCategoryRequest:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      slug:
+        type: string
+    required:
+    - id
+    - name
+    - slug
     type: object
   dto.UserSummary:
     properties:
@@ -195,6 +240,189 @@ paths:
       summary: 註冊新用戶
       tags:
       - auth
+  /categories:
+    get:
+      consumes:
+      - application/json
+      description: 獲取所有類別列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 獲取成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/dto.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.CategoryListResponse'
+              type: object
+        "500":
+          description: 伺服器錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+      summary: 獲取所有類別
+      tags:
+      - categories
+    post:
+      consumes:
+      - application/json
+      description: 創建新的商品類別(僅管理員)
+      parameters:
+      - description: 類別資訊
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateCategoryRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 創建成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/dto.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.CategoryResponse'
+              type: object
+        "400":
+          description: 請求參數錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "401":
+          description: 未授權
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "403":
+          description: 權限不足
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "500":
+          description: 伺服器錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: 創建新類別
+      tags:
+      - categories
+  /categories/:id:
+    put:
+      consumes:
+      - application/json
+      description: 根據 id 更新商品類別(僅管理員)
+      parameters:
+      - description: 類別資訊
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateCategoryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 創建成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/dto.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.CategoryResponse'
+              type: object
+        "400":
+          description: 請求參數錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "401":
+          description: 未授權
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "403":
+          description: 權限不足
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "500":
+          description: 伺服器錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: 更新指定類別
+      tags:
+      - categories
+  /categories/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 根據 ID 刪除商品類別(僅管理員)
+      parameters:
+      - description: 類別 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: 刪除成功
+        "400":
+          description: 請求參數錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "401":
+          description: 未授權
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "403":
+          description: 權限不足
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "500":
+          description: 伺服器錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: 刪除指定類別
+      tags:
+      - categories
+    get:
+      consumes:
+      - application/json
+      description: 根據 ID 獲得類別詳情
+      parameters:
+      - description: 類別 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 獲取成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/dto.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.CategoryResponse'
+              type: object
+        "404":
+          description: 找不到
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "500":
+          description: 伺服器錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+      summary: 獲得單個類別
+      tags:
+      - categories
 securityDefinitions:
   BearerAuth:
     in: header
