@@ -43,7 +43,10 @@ func NewDatabase(config DatabaseConfig) (*gorm.DB, error) {
 func AutoMigrate(db *gorm.DB) error {
 	log.Println("Starting database migration...")
 
-	err := db.AutoMigrate(&models.UserModel{})
+	err := db.AutoMigrate(
+		&models.UserModel{},
+		&models.CategoryModel{},
+	)
 
 	if err != nil {
 		return fmt.Errorf("failed to migrate database: %w", err)

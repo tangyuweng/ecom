@@ -40,7 +40,7 @@ func (r *MysqlUserRepository) FindByID(ctx context.Context, id string) (*entity.
 	err := r.db.WithContext(ctx).Where("id = ?", id).First(&model).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("user not found")
+			return nil, entity.ErrUserNotFound
 		}
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func (r *MysqlUserRepository) FindByEmail(ctx context.Context, email string) (*e
 	err := r.db.WithContext(ctx).Where("email = ?", email).First(&model).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("user not found")
+			return nil, entity.ErrUserNotFound
 		}
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func (r *MysqlUserRepository) Delete(ctx context.Context, id string) error {
 	}
 
 	if result.RowsAffected == 0 {
-		return errors.New("user not found")
+		return entity.ErrUserNotFound
 	}
 
 	return nil

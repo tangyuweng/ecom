@@ -32,6 +32,7 @@ logs/
 mysql_data/
 
 bin/
+*.png
 
 # Editor/IDE
 # .idea/
