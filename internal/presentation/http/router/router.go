@@ -13,6 +13,7 @@ import (
 func SetupRouter(
 	authUseCase *usecase.AuthUseCase,
 	categoryUseCase *usecase.CategoryUseCase,
+	productUseCase *usecase.ProductUseCase,
 	jwtService usecase.JWTService,
 	cfg *conf.Config,
 ) *gin.Engine {
@@ -22,6 +23,7 @@ func SetupRouter(
 
 	authHandler := handler.NewAuthHandler(authUseCase, cfg)
 	categoryHandler := handler.NewCategoryHandler(categoryUseCase)
+	productHandler := handler.NewProductHandler(productUseCase)
 
 	authMiddleware := middleware.AuthMiddleware(jwtService)
 
@@ -41,6 +43,16 @@ func SetupRouter(
 			categories.POST("", authMiddleware, categoryHandler.CreateCategory)
 			categories.PUT("/:id", authMiddleware, categoryHandler.UpdateCategory)
 			categories.DELETE("/:id", authMiddleware, categoryHandler.DeleteCategory)
+		}
+		products := v1.Group("/products")
+		{
+			products.GET("", productHandler.GetProducts)
+			products.GET("/:id", productHandler.GetProduct)
+			products.GET("/category/:id", productHandler.GetProductsByCategory)
+			products.POST("", authMiddleware, productHandler.CreateProduct)
+			products.PUT("/:id", authMiddleware, productHandler.UpdateProduct)
+			products.DELETE("/:id", authMiddleware, productHandler.DeleteProduct)
+			products.PATCH("/:id/stock", authMiddleware, productHandler.UpdateProductStock)
 		}
 	}
 

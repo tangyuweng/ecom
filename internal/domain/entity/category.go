@@ -22,6 +22,7 @@ var (
 	ErrCategoryNotFound     = errors.New("category not found")
 	ErrCategoryExists       = errors.New("category with this name or slug already exists")
 	ErrCategoryUnauthorized = errors.New("unauthorized access to or modification of the Category is forbidden")
+	ErrCategoryHasProducts  = errors.New("cannot delete category with existing products")
 )
 
 var slugRegex = regexp.MustCompile("^[a-z0-9-]+$")
