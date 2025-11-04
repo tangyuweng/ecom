@@ -32,6 +32,27 @@ definitions:
     - name
     - slug
     type: object
+  dto.CreateProductRequest:
+    properties:
+      category_id:
+        type: string
+      description:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        type: string
+      price:
+        minimum: 0
+        type: number
+      stock_quantity:
+        minimum: 0
+        type: integer
+    required:
+    - name
+    - price
+    - stock_quantity
+    type: object
   dto.LoginRequest:
     properties:
       email:
@@ -50,6 +71,40 @@ definitions:
         type: string
       user:
         $ref: '#/definitions/dto.UserSummary'
+    type: object
+  dto.ProductListResponse:
+    properties:
+      products:
+        items:
+          $ref: '#/definitions/dto.ProductResponse'
+        type: array
+      total:
+        type: integer
+    type: object
+  dto.ProductResponse:
+    properties:
+      category_id:
+        type: string
+      category_name:
+        type: string
+      category_slug:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        type: string
+      price:
+        type: number
+      stock_quantity:
+        type: integer
+      updated_at:
+        type: string
     type: object
   dto.RefreshTokenResponse:
     properties:
@@ -98,6 +153,33 @@ definitions:
     - id
     - name
     - slug
+    type: object
+  dto.UpdateProductRequest:
+    properties:
+      category_id:
+        type: string
+      description:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        type: string
+      price:
+        minimum: 0
+        type: number
+      stock_quantity:
+        minimum: 0
+        type: integer
+    required:
+    - name
+    type: object
+  dto.UpdateProductStockRequest:
+    properties:
+      stock_quantity:
+        minimum: 0
+        type: integer
+    required:
+    - stock_quantity
     type: object
   dto.UserSummary:
     properties:
@@ -423,6 +505,337 @@ paths:
       summary: 獲得單個類別
       tags:
       - categories
+  /categories/{id}/products:
+    get:
+      consumes:
+      - application/json
+      description: 根據類別 ID 獲取該類別下的所有商品
+      parameters:
+      - description: 類別 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 獲取成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/dto.StandardResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.ProductResponse'
+                  type: array
+              type: object
+        "404":
+          description: 類別不存在
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "500":
+          description: 伺服器錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+      summary: 根據類別獲取商品列表
+      tags:
+      - products
+  /products:
+    get:
+      consumes:
+      - application/json
+      description: 根據查詢條件獲取商品列表,支援分頁、排序和篩選
+      parameters:
+      - description: 商品名稱
+        in: query
+        name: name
+        type: string
+      - description: 類別 slug
+        in: query
+        name: category
+        type: string
+      - description: 最低價格
+        in: query
+        name: min_price
+        type: number
+      - description: 最高價格
+        in: query
+        name: max_price
+        type: number
+      - description: 是否啟用
+        in: query
+        name: is_active
+        type: boolean
+      - description: 排序欄位
+        enum:
+        - price
+        - created_at
+        - name
+        in: query
+        name: sort_by
+        type: string
+      - description: 排序方向
+        enum:
+        - asc
+        - desc
+        in: query
+        name: sort_order
+        type: string
+      - default: 1
+        description: 頁碼
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: 每頁數量
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 獲取成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/dto.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.ProductListResponse'
+              type: object
+        "400":
+          description: 請求參數錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "500":
+          description: 伺服器錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+      summary: 獲取商品列表
+      tags:
+      - products
+    post:
+      consumes:
+      - application/json
+      description: 創建新商品 (需要管理員權限)
+      parameters:
+      - description: 商品資訊
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateProductRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 創建成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/dto.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.ProductResponse'
+              type: object
+        "400":
+          description: 請求參數錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "401":
+          description: 未授權
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "403":
+          description: 無權限
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "500":
+          description: 伺服器錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: 創建商品
+      tags:
+      - products
+  /products/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 刪除商品 (需要管理員權限)
+      parameters:
+      - description: 商品 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: 刪除成功
+        "401":
+          description: 未授權
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "403":
+          description: 無權限
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "404":
+          description: 商品不存在
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "500":
+          description: 伺服器錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: 刪除商品
+      tags:
+      - products
+    get:
+      consumes:
+      - application/json
+      description: 根據商品 ID 獲取商品詳細資訊
+      parameters:
+      - description: 商品 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 獲取成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/dto.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.ProductResponse'
+              type: object
+        "404":
+          description: 商品不存在
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "500":
+          description: 伺服器錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+      summary: 獲取單一商品
+      tags:
+      - products
+    put:
+      consumes:
+      - application/json
+      description: 更新商品資訊 (需要管理員權限)
+      parameters:
+      - description: 商品 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 商品資訊
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateProductRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/dto.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.ProductResponse'
+              type: object
+        "400":
+          description: 請求參數錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "401":
+          description: 未授權
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "403":
+          description: 無權限
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "404":
+          description: 商品不存在
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "500":
+          description: 伺服器錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: 更新商品
+      tags:
+      - products
+  /products/{id}/stock:
+    patch:
+      consumes:
+      - application/json
+      description: 更新商品庫存數量 (需要管理員權限)
+      parameters:
+      - description: 商品 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 庫存資訊
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateProductStockRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/dto.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.ProductResponse'
+              type: object
+        "400":
+          description: 請求參數錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "401":
+          description: 未授權
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "403":
+          description: 無權限
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "404":
+          description: 商品不存在
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "500":
+          description: 伺服器錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: 更新商品庫存
+      tags:
+      - products
 securityDefinitions:
   BearerAuth:
     in: header

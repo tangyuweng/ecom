@@ -11,12 +11,18 @@ import (
 type CategoryUseCase struct {
 	categoryRepo repository.CategoryRepository
 	userRepo     repository.UserRepository
+	productRepo  repository.ProductRepository
 }
 
-func NewCategoryUseCase(categoryRepo repository.CategoryRepository, userRepo repository.UserRepository) *CategoryUseCase {
+func NewCategoryUseCase(
+	categoryRepo repository.CategoryRepository,
+	userRepo repository.UserRepository,
+	productRepo repository.ProductRepository,
+) *CategoryUseCase {
 	return &CategoryUseCase{
 		categoryRepo: categoryRepo,
 		userRepo:     userRepo,
+		productRepo:  productRepo,
 	}
 }
 
@@ -115,6 +121,15 @@ func (uc *CategoryUseCase) DeleteCategory(ctx context.Context, userID, categoryI
 	_, err = uc.categoryRepo.FindByID(ctx, categoryID)
 	if err != nil {
 		return err
+	}
+
+	hashProducts, err := uc.productRepo.ExistsByCategoryID(ctx, categoryID)
+	if err != nil {
+		return err
+	}
+
+	if hashProducts {
+		return entity.ErrCategoryHasProducts
 	}
 
 	return uc.categoryRepo.Delete(ctx, categoryID)

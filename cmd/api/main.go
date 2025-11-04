@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"flag"
 	"log"
 	"time"
 
@@ -9,6 +11,7 @@ import (
 	"github.com/tangyuweng/ecom/internal/application/usecase"
 	"github.com/tangyuweng/ecom/internal/infrastructure/jwt"
 	"github.com/tangyuweng/ecom/internal/infrastructure/mysql"
+	"github.com/tangyuweng/ecom/internal/infrastructure/mysql/seed"
 	"github.com/tangyuweng/ecom/internal/presentation/http/router"
 )
 
@@ -32,6 +35,13 @@ import (
 // @scheme bearer
 // @bearerFormat JWT
 func main() {
+	shouldSeed := flag.Bool("seed", false, "Run database seeding")
+	shouldMigrateUp := flag.Bool("migrate-up", false, "Run migrations up")
+	shouldMigrateDown := flag.Bool("migrate-down", false, "Rollback last migration")
+	migrateSteps := flag.Int("migrate-steps", 0, "Run specific number of migration steps (positive=up, negative=down)")
+	shouldCheckMigrationVersion := flag.Bool("migrate-status", false, "Check migration version")
+	flag.Parse()
+
 	cfg, err := conf.LoadConfig()
 	if err != nil {
 		log.Fatal(err)
@@ -48,12 +58,72 @@ func main() {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
-	if err := mysql.AutoMigrate(db); err != nil {
-		log.Fatalf("Failed to migrate database: %v", err)
+	// if err := mysql.AutoMigrate(db); err != nil {
+	// 	log.Fatalf("Failed to migrate database: %v", err)
+	// }
+
+	migrator, err := mysql.NewMigrator(db, "internal/infrastructure/mysql/migrations")
+	if err != nil {
+		log.Fatalf("Failed to create migrator: %v", err)
+	}
+
+	if *shouldMigrateUp {
+		log.Println("Running migrations up...")
+		if err := migrator.Up(); err != nil {
+			log.Fatalf("Failed to run migrations: %v", err)
+		}
+		log.Println("Migrations completed successfully")
+		return
+	}
+
+	if *shouldMigrateDown {
+		log.Println("Rolling back migration...")
+		if err := migrator.Down(); err != nil {
+			log.Fatalf("Failed to rollback migration: %v", err)
+		}
+		log.Println("Rollback completed successfully")
+		return
+	}
+
+	if *migrateSteps != 0 {
+		log.Printf("Running %d migration steps...", *migrateSteps)
+		if err := migrator.Steps(*migrateSteps); err != nil {
+			log.Fatalf("Failed to run migration steps: %v", err)
+		}
+		log.Println("Migration steps completed successfully")
+		return
+	}
+
+	if *shouldCheckMigrationVersion {
+		version, dirty, err := migrator.Version()
+		if err != nil {
+			log.Printf("Failed to get migration version: %v", err)
+			return
+		}
+
+		if dirty {
+			log.Printf("Migration status: DIRTY (version %d)", version)
+			log.Println("The database is in an inconsistent state.")
+			log.Println("Run 'make migrate-force' to fix it.")
+		} else {
+			log.Printf("Current migration version: %d", version)
+			log.Println("Database is up to date.")
+		}
+		return
 	}
 
 	userRepo := mysql.NewUserRepository(db)
 	categoryRepo := mysql.NewMysqlCategoryRepository(db)
+	productRepo := mysql.NewMysqlProductRepository(db)
+
+	if *shouldSeed {
+		seeder := seed.NewSeeder(userRepo, categoryRepo, productRepo)
+		if err := seeder.SeedAll(context.Background()); err != nil {
+			log.Fatalf("Failed to seed database: %v", err)
+		}
+		log.Println("Seeding completed, exiting...")
+		return
+	}
 
 	jwtService := jwt.NewJWTService(
 		cfg.JWT.Secret,
@@ -62,9 +132,10 @@ func main() {
 	)
 
 	authUseCase := usecase.NewAuthUseCase(userRepo, jwtService)
-	categoryUseCase := usecase.NewCategoryUseCase(categoryRepo, userRepo)
+	categoryUseCase := usecase.NewCategoryUseCase(categoryRepo, userRepo, productRepo)
+	productUseCase := usecase.NewProductUseCase(productRepo, categoryRepo, userRepo)
 
-	r := router.SetupRouter(authUseCase, categoryUseCase, jwtService, cfg)
+	r := router.SetupRouter(authUseCase, categoryUseCase, productUseCase, jwtService, cfg)
 
 	log.Printf("Starting server on %s", cfg.Server.Port)
 	log.Printf("Swagger UI: http://localhost%s/swagger/index.html", cfg.Server.Port)

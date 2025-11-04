@@ -14,7 +14,7 @@ type CategoryModel struct {
 	UpdatedAt time.Time `gorm:"autoUpdateTime"`
 }
 
-func (m *CategoryModel) TableName() string {
+func (CategoryModel) TableName() string {
 	return "categories"
 }
 
