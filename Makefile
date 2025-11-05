@@ -28,6 +28,10 @@ migrate-create:
 migrate-status: build
 	bin/api -migrate-status
 
+migrate-force: build
+	@read -p "Force migration to version (current dirty version): " version; \
+	bin/api -migrate-force=$$version
+
 seed: build
 	bin/api -seed
 
@@ -37,4 +41,4 @@ docker-run:
 docker-stop:
 	docker-compose down
 
-.PHONY: swagger build run migrate-up migrate-down migrate-step-up migrate-step-down migrate-create migrate-status seed docker-run docker-stop
+.PHONY: swagger build run migrate-up migrate-down migrate-step-up migrate-step-down migrate-create migrate-status migrate-force seed docker-run docker-stop

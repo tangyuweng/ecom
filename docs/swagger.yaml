@@ -1,5 +1,56 @@
 basePath: /api/v1
 definitions:
+  dto.AddToCartRequest:
+    properties:
+      product_id:
+        type: string
+      quantity:
+        minimum: 1
+        type: integer
+    required:
+    - product_id
+    - quantity
+    type: object
+  dto.CartItemResponse:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      product:
+        $ref: '#/definitions/dto.ProductResponse'
+      product_id:
+        type: string
+      product_name:
+        type: string
+      product_price:
+        type: number
+      quantity:
+        type: integer
+      subtotal:
+        type: number
+      updated_at:
+        type: string
+    type: object
+  dto.CartResponse:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/dto.CartItemResponse'
+        type: array
+      total_items:
+        type: integer
+      total_price:
+        type: number
+      updated_at:
+        type: string
+      user_id:
+        type: string
+    type: object
   dto.CategoryListResponse:
     properties:
       categories:
@@ -140,6 +191,14 @@ definitions:
         type: string
       success:
         type: boolean
+    type: object
+  dto.UpdateCartItemRequest:
+    properties:
+      quantity:
+        minimum: 1
+        type: integer
+    required:
+    - quantity
     type: object
   dto.UpdateCategoryRequest:
     properties:
@@ -322,6 +381,205 @@ paths:
       summary: 註冊新用戶
       tags:
       - auth
+  /cart:
+    delete:
+      consumes:
+      - application/json
+      description: 清空當前使用者的購物車
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: 清空成功
+        "401":
+          description: 未授權
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "404":
+          description: 購物車不存在
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "500":
+          description: 伺服器錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: 清空購物車
+      tags:
+      - cart
+    get:
+      consumes:
+      - application/json
+      description: 獲取當前使用者的購物車資訊
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 獲取成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/dto.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.CartResponse'
+              type: object
+        "401":
+          description: 未授權
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "500":
+          description: 伺服器錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: 獲取購物車
+      tags:
+      - cart
+  /cart/items:
+    post:
+      consumes:
+      - application/json
+      description: 將商品添加到購物車，如果商品已存在則增加數量
+      parameters:
+      - description: 商品資訊
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.AddToCartRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 添加成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/dto.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.CartResponse'
+              type: object
+        "400":
+          description: 請求參數錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "401":
+          description: 未授權
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "404":
+          description: 商品不存在
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "409":
+          description: 庫存不足
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "500":
+          description: 伺服器錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: 添加商品到購物車
+      tags:
+      - cart
+  /cart/items/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 從購物車中移除指定商品
+      parameters:
+      - description: 購物車項目 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: 移除成功
+        "401":
+          description: 未授權
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "403":
+          description: 無權限
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "404":
+          description: 購物車項目不存在
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "500":
+          description: 伺服器錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: 移除購物車項目
+      tags:
+      - cart
+    put:
+      consumes:
+      - application/json
+      description: 更新購物車中商品的數量
+      parameters:
+      - description: 購物車項目 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 數量資訊
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateCartItemRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/dto.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.CartResponse'
+              type: object
+        "400":
+          description: 請求參數錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "401":
+          description: 未授權
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "403":
+          description: 無權限
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "404":
+          description: 購物車項目不存在
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "409":
+          description: 庫存不足
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "500":
+          description: 伺服器錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: 更新購物車項目
+      tags:
+      - cart
   /categories:
     get:
       consumes:

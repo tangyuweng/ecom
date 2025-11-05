@@ -11,7 +11,7 @@ import (
 	"github.com/tangyuweng/ecom/internal/application/usecase"
 	"github.com/tangyuweng/ecom/internal/infrastructure/jwt"
 	"github.com/tangyuweng/ecom/internal/infrastructure/mysql"
-	"github.com/tangyuweng/ecom/internal/infrastructure/mysql/seed"
+	"github.com/tangyuweng/ecom/internal/infrastructure/seed"
 	"github.com/tangyuweng/ecom/internal/presentation/http/router"
 )
 
@@ -40,6 +40,7 @@ func main() {
 	shouldMigrateDown := flag.Bool("migrate-down", false, "Rollback last migration")
 	migrateSteps := flag.Int("migrate-steps", 0, "Run specific number of migration steps (positive=up, negative=down)")
 	shouldCheckMigrationVersion := flag.Bool("migrate-status", false, "Check migration version")
+	migrateForce := flag.Int("migrate-force", -1, "Force migration to specific version")
 	flag.Parse()
 
 	cfg, err := conf.LoadConfig()
@@ -94,6 +95,15 @@ func main() {
 		return
 	}
 
+	if *migrateForce >= 0 {
+		log.Printf("Forcing migration to version %d...", *migrateForce)
+		if err := migrator.Force(*migrateForce); err != nil {
+			log.Fatalf("Failed to force migration: %v", err)
+		}
+		log.Println("Migration forced successfully")
+		return
+	}
+
 	if *shouldCheckMigrationVersion {
 		version, dirty, err := migrator.Version()
 		if err != nil {
@@ -115,6 +125,7 @@ func main() {
 	userRepo := mysql.NewUserRepository(db)
 	categoryRepo := mysql.NewMysqlCategoryRepository(db)
 	productRepo := mysql.NewMysqlProductRepository(db)
+	cartRepo := mysql.NewMysqlCartRepository(db)
 
 	if *shouldSeed {
 		seeder := seed.NewSeeder(userRepo, categoryRepo, productRepo)
@@ -134,8 +145,9 @@ func main() {
 	authUseCase := usecase.NewAuthUseCase(userRepo, jwtService)
 	categoryUseCase := usecase.NewCategoryUseCase(categoryRepo, userRepo, productRepo)
 	productUseCase := usecase.NewProductUseCase(productRepo, categoryRepo, userRepo)
+	cartUseCase := usecase.NewCartUseCase(cartRepo, productRepo)
 
-	r := router.SetupRouter(authUseCase, categoryUseCase, productUseCase, jwtService, cfg)
+	r := router.SetupRouter(authUseCase, categoryUseCase, productUseCase, cartUseCase, jwtService, cfg)
 
 	log.Printf("Starting server on %s", cfg.Server.Port)
 	log.Printf("Swagger UI: http://localhost%s/swagger/index.html", cfg.Server.Port)
