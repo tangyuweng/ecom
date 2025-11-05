@@ -2,7 +2,6 @@ package dto
 
 import "time"
 
-// Request DTOs
 type AddToCartRequest struct {
 	ProductID string `json:"product_id" binding:"required"`
 	Quantity  int    `json:"quantity" binding:"required,min=1"`
@@ -12,17 +11,16 @@ type UpdateCartItemRequest struct {
 	Quantity int `json:"quantity" binding:"required,min=1"`
 }
 
-// Response DTOs
 type CartItemResponse struct {
-	ID            string           `json:"id"`
-	ProductID     string           `json:"product_id"`
-	ProductName   string           `json:"product_name"`
-	ProductPrice  float64          `json:"product_price"`
-	Quantity      int              `json:"quantity"`
-	Subtotal      float64          `json:"subtotal"`
-	Product       *ProductResponse `json:"product,omitempty"`
-	CreatedAt     time.Time        `json:"created_at"`
-	UpdatedAt     time.Time        `json:"updated_at"`
+	ID           string           `json:"id"`
+	ProductID    string           `json:"product_id"`
+	ProductName  string           `json:"product_name"`
+	ProductPrice float64          `json:"product_price"`
+	Quantity     int              `json:"quantity"`
+	Subtotal     float64          `json:"subtotal"`
+	Product      *ProductResponse `json:"product,omitempty"`
+	CreatedAt    time.Time        `json:"created_at"`
+	UpdatedAt    time.Time        `json:"updated_at"`
 }
 
 type CartResponse struct {

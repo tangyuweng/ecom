@@ -83,6 +83,18 @@ definitions:
     - name
     - slug
     type: object
+  dto.CreateOrderRequest:
+    properties:
+      recipient_name:
+        maxLength: 50
+        type: string
+      shipping_address:
+        maxLength: 255
+        type: string
+    required:
+    - recipient_name
+    - shipping_address
+    type: object
   dto.CreateProductRequest:
     properties:
       category_id:
@@ -122,6 +134,52 @@ definitions:
         type: string
       user:
         $ref: '#/definitions/dto.UserSummary'
+    type: object
+  dto.OrderItemResponse:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      product:
+        $ref: '#/definitions/dto.ProductResponse'
+      product_id:
+        type: string
+      product_name:
+        type: string
+      quantity:
+        type: integer
+      subtotal:
+        type: number
+      unit_price:
+        type: number
+      updated_at:
+        type: string
+    type: object
+  dto.OrderResponse:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/dto.OrderItemResponse'
+        type: array
+      order_date:
+        type: string
+      recipient_name:
+        type: string
+      shipping_address:
+        type: string
+      status:
+        type: string
+      total_amount:
+        type: number
+      updated_at:
+        type: string
+      user_id:
+        type: string
     type: object
   dto.ProductListResponse:
     properties:
@@ -799,6 +857,178 @@ paths:
       summary: 根據類別獲取商品列表
       tags:
       - products
+  /orders:
+    get:
+      consumes:
+      - application/json
+      description: 取得當前使用者的所有訂單列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 取得成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/dto.StandardResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.OrderResponse'
+                  type: array
+              type: object
+        "401":
+          description: 未授權
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "500":
+          description: 伺服器錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: 取得用戶所有訂單
+      tags:
+      - orders
+    post:
+      consumes:
+      - application/json
+      description: 將購物車中的商品轉換為訂單（結帳）
+      parameters:
+      - description: 訂單資訊
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 訂單建立成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/dto.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.OrderResponse'
+              type: object
+        "400":
+          description: 請求參數錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "401":
+          description: 未授權
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "404":
+          description: 購物車為空或商品不存在
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "409":
+          description: 庫存不足
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "500":
+          description: 伺服器錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: 從購物車建立訂單
+      tags:
+      - orders
+  /orders/{id}:
+    get:
+      consumes:
+      - application/json
+      description: 取得指定訂單的詳細資訊
+      parameters:
+      - description: 訂單 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 取得成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/dto.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.OrderResponse'
+              type: object
+        "401":
+          description: 未授權
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "403":
+          description: 無權限訪問此訂單
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "404":
+          description: 訂單不存在
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "500":
+          description: 伺服器錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: 取得訂單詳情
+      tags:
+      - orders
+  /orders/{id}/cancel:
+    post:
+      consumes:
+      - application/json
+      description: 取消指定的訂單（僅限 Pending 或 Processing 狀態）
+      parameters:
+      - description: 訂單 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 取消成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/dto.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.OrderResponse'
+              type: object
+        "400":
+          description: 訂單無法取消
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "401":
+          description: 未授權
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "403":
+          description: 無權限
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "404":
+          description: 訂單不存在
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "500":
+          description: 伺服器錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: 取消訂單
+      tags:
+      - orders
   /products:
     get:
       consumes:

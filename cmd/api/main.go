@@ -59,10 +59,6 @@ func main() {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
-	// if err := mysql.AutoMigrate(db); err != nil {
-	// 	log.Fatalf("Failed to migrate database: %v", err)
-	// }
-
 	migrator, err := mysql.NewMigrator(db, "internal/infrastructure/mysql/migrations")
 	if err != nil {
 		log.Fatalf("Failed to create migrator: %v", err)
@@ -126,6 +122,7 @@ func main() {
 	categoryRepo := mysql.NewMysqlCategoryRepository(db)
 	productRepo := mysql.NewMysqlProductRepository(db)
 	cartRepo := mysql.NewMysqlCartRepository(db)
+	orderRepo := mysql.NewMysqlOrderRepository(db)
 
 	if *shouldSeed {
 		seeder := seed.NewSeeder(userRepo, categoryRepo, productRepo)
@@ -146,8 +143,9 @@ func main() {
 	categoryUseCase := usecase.NewCategoryUseCase(categoryRepo, userRepo, productRepo)
 	productUseCase := usecase.NewProductUseCase(productRepo, categoryRepo, userRepo)
 	cartUseCase := usecase.NewCartUseCase(cartRepo, productRepo)
+	orderUseCase := usecase.NewOrderUseCase(orderRepo, cartRepo, productRepo)
 
-	r := router.SetupRouter(authUseCase, categoryUseCase, productUseCase, cartUseCase, jwtService, cfg)
+	r := router.SetupRouter(authUseCase, categoryUseCase, productUseCase, cartUseCase, orderUseCase, jwtService, cfg)
 
 	log.Printf("Starting server on %s", cfg.Server.Port)
 	log.Printf("Swagger UI: http://localhost%s/swagger/index.html", cfg.Server.Port)
