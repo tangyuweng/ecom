@@ -92,6 +92,16 @@ func (p *Product) Update(categoryID, name, description string, price float64, st
 	return nil
 }
 
+func (p *Product) UpdateStockQuantity(stockQuantity int) error {
+	if err := validateProductStockQuantity(stockQuantity); err != nil {
+		return err
+	}
+
+	p.StockQuantity = stockQuantity
+	p.UpdatedAt = time.Now()
+	return nil
+}
+
 func (p *Product) IsStockAvailable() bool {
 	return p.StockQuantity > 0
 }

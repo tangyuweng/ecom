@@ -86,7 +86,7 @@ func (h *ProductHandler) GetProduct(c *gin.Context) {
 // CreateProduct godoc
 // @Summary      創建商品
 // @Description  創建新商品 (需要管理員權限)
-// @Tags         products
+// @Tags         admin
 // @Accept       json
 // @Produce      json
 // @Security     BearerAuth
@@ -96,7 +96,7 @@ func (h *ProductHandler) GetProduct(c *gin.Context) {
 // @Failure      401 {object} dto.StandardResponse "未授權"
 // @Failure      403 {object} dto.StandardResponse "無權限"
 // @Failure      500 {object} dto.StandardResponse "伺服器錯誤"
-// @Router       /products [post]
+// @Router       /admin/products [post]
 func (h *ProductHandler) CreateProduct(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
@@ -132,7 +132,7 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 // UpdateProduct godoc
 // @Summary      更新商品
 // @Description  更新商品資訊 (需要管理員權限)
-// @Tags         products
+// @Tags         admin
 // @Accept       json
 // @Produce      json
 // @Security     BearerAuth
@@ -144,7 +144,7 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 // @Failure      403 {object} dto.StandardResponse "無權限"
 // @Failure      404 {object} dto.StandardResponse "商品不存在"
 // @Failure      500 {object} dto.StandardResponse "伺服器錯誤"
-// @Router       /products/{id} [put]
+// @Router       /admin/products/{id} [put]
 func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
@@ -182,7 +182,7 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 // DeleteProduct godoc
 // @Summary      刪除商品
 // @Description  刪除商品 (需要管理員權限)
-// @Tags         products
+// @Tags         admin
 // @Accept       json
 // @Produce      json
 // @Security     BearerAuth
@@ -192,7 +192,7 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 // @Failure      403 {object} dto.StandardResponse "無權限"
 // @Failure      404 {object} dto.StandardResponse "商品不存在"
 // @Failure      500 {object} dto.StandardResponse "伺服器錯誤"
-// @Router       /products/{id} [delete]
+// @Router       /admin/products/{id} [delete]
 func (h *ProductHandler) DeleteProduct(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
@@ -222,7 +222,7 @@ func (h *ProductHandler) DeleteProduct(c *gin.Context) {
 // UpdateProductStock godoc
 // @Summary      更新商品庫存
 // @Description  更新商品庫存數量 (需要管理員權限)
-// @Tags         products
+// @Tags         admin
 // @Accept       json
 // @Produce      json
 // @Security     BearerAuth
@@ -234,7 +234,7 @@ func (h *ProductHandler) DeleteProduct(c *gin.Context) {
 // @Failure      403 {object} dto.StandardResponse "無權限"
 // @Failure      404 {object} dto.StandardResponse "商品不存在"
 // @Failure      500 {object} dto.StandardResponse "伺服器錯誤"
-// @Router       /products/{id}/stock [patch]
+// @Router       /admin/products/{id}/stock [patch]
 func (h *ProductHandler) UpdateProductStock(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {

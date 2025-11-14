@@ -110,23 +110,6 @@ func (r *MysqlOrderRepository) Update(ctx context.Context, order *entity.Order) 
 	return nil
 }
 
-func (r *MysqlOrderRepository) UpdateStatus(ctx context.Context, orderID string, status entity.OrderStatus) error {
-	result := r.db.WithContext(ctx).
-		Model(&models.OrderModel{}).
-		Where("id = ?", orderID).
-		Update("status", status)
-
-	if result.Error != nil {
-		return result.Error
-	}
-
-	if result.RowsAffected == 0 {
-		return entity.ErrOrderNotFound
-	}
-
-	return nil
-}
-
 // OrderItem operations
 func (r *MysqlOrderRepository) CreateItems(ctx context.Context, items []*entity.OrderItem) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {

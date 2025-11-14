@@ -12,17 +12,20 @@ type OrderUseCase struct {
 	orderRepo   repository.OrderRepository
 	cartRepo    repository.CartRepository
 	productRepo repository.ProductRepository
+	userRepo    repository.UserRepository
 }
 
 func NewOrderUseCase(
 	orderRepo repository.OrderRepository,
 	cartRepo repository.CartRepository,
 	productRepo repository.ProductRepository,
+	userRepo repository.UserRepository,
 ) *OrderUseCase {
 	return &OrderUseCase{
 		orderRepo:   orderRepo,
 		cartRepo:    cartRepo,
 		productRepo: productRepo,
+		userRepo:    userRepo,
 	}
 }
 
@@ -36,26 +39,23 @@ func (uc *OrderUseCase) CreateOrderFromCart(ctx context.Context, userID string, 
 		return nil, entity.ErrEmptyCart
 	}
 
-	// 3. 驗證所有商品的庫存並準備訂單項目
+	// 驗證所有商品的庫存並準備訂單項目
 	orderItems := make([]*entity.OrderItem, 0, len(cart.Items))
 	for _, cartItem := range cart.Items {
-		// 取得最新的商品資訊
 		product, err := uc.productRepo.FindByID(ctx, cartItem.ProductID)
 		if err != nil {
 			return nil, err
 		}
 
-		// 檢查商品是否啟用
 		if !product.IsActive {
 			return nil, entity.ErrProductNotFound
 		}
 
-		// 檢查庫存是否足夠
 		if product.StockQuantity < cartItem.Quantity {
 			return nil, entity.ErrProductInsufficientStock
 		}
 
-		// 創建訂單項目（使用當前價格）
+		// 使用當前價格創建訂單項目
 		orderItem, err := entity.NewOrderItem("", cartItem.ProductID, cartItem.Quantity, product.Price)
 		if err != nil {
 			return nil, err
@@ -64,18 +64,16 @@ func (uc *OrderUseCase) CreateOrderFromCart(ctx context.Context, userID string, 
 		orderItems = append(orderItems, orderItem)
 	}
 
-	// 4. 創建訂單
 	order, err := entity.NewOrder(userID, req.ShippingAddress, req.RecipientName, orderItems)
 	if err != nil {
 		return nil, err
 	}
 
-	// 5. 儲存訂單（在 transaction 中處理）
 	if err := uc.orderRepo.Create(ctx, order); err != nil {
 		return nil, err
 	}
 
-	// 6. 扣除商品庫存
+	// 扣除商品庫存
 	for _, item := range orderItems {
 		product, _ := uc.productRepo.FindByID(ctx, item.ProductID)
 		newStock := product.StockQuantity - item.Quantity
@@ -94,12 +92,11 @@ func (uc *OrderUseCase) CreateOrderFromCart(ctx context.Context, userID string, 
 		}
 	}
 
-	// 7. 清空購物車
+	// 清空購物車
 	if err := uc.cartRepo.Delete(ctx, userID); err != nil {
 		return nil, err
 	}
 
-	// 8. 返回訂單資訊
 	createdOrder, err := uc.orderRepo.FindByID(ctx, order.ID)
 	if err != nil {
 		return nil, err
@@ -135,7 +132,7 @@ func (uc *OrderUseCase) GetUserOrders(ctx context.Context, userID string) ([]*dt
 	return responses, nil
 }
 
-// CancelOrder 取消訂單（用戶可用）
+// 取消訂單（用戶可用，僅限 Pending 或 Processing 狀態）
 func (uc *OrderUseCase) CancelOrder(ctx context.Context, userID, orderID string) (*dto.OrderResponse, error) {
 	order, err := uc.orderRepo.FindByID(ctx, orderID)
 	if err != nil {
@@ -174,6 +171,74 @@ func (uc *OrderUseCase) CancelOrder(ctx context.Context, userID, orderID string)
 			continue
 		}
 		uc.productRepo.Update(ctx, product)
+	}
+
+	updatedOrder, err := uc.orderRepo.FindByID(ctx, orderID)
+	if err != nil {
+		return nil, err
+	}
+
+	return uc.toOrderResponse(updatedOrder), nil
+}
+
+// 更新訂單狀態 (僅限管理員，若是以經是 Completed 或 Cancelled 狀態就不能操作了，若取消訂單則恢復庫存)
+func (uc *OrderUseCase) UpdateOrderStatus(ctx context.Context, adminID, orderID string, req dto.UpdateOrderStatusRequest) (*dto.OrderResponse, error) {
+	admin, err := uc.userRepo.FindByID(ctx, adminID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !admin.IsAdmin() {
+		return nil, entity.ErrUserUnauthorized
+	}
+
+	order, err := uc.orderRepo.FindByID(ctx, orderID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 檢查訂單當前狀態是否允許更新
+	if order.Status == entity.OrderStatusCompleted || order.Status == entity.OrderStatusCancelled {
+		return nil, entity.ErrOrderInvalidStatusTransition
+	}
+
+	newStatus := entity.OrderStatus(req.Status)
+
+	// 根據新狀態決定操作
+	if newStatus == entity.OrderStatusCancelled {
+		if err := order.Cancel(); err != nil {
+			return nil, err
+		}
+
+		// 恢復商品庫存
+		for _, item := range order.Items {
+			product, err := uc.productRepo.FindByID(ctx, item.ProductID)
+			if err != nil {
+				continue // 如果商品已被刪除，跳過
+			}
+
+			newStock := product.StockQuantity + item.Quantity
+			if err := product.Update(
+				product.CategoryID,
+				product.Name,
+				product.Description,
+				product.Price,
+				newStock,
+				product.IsActive,
+			); err != nil {
+				continue
+			}
+			uc.productRepo.Update(ctx, product)
+		}
+	} else {
+		// 其他狀態轉換使用 UpdateStatus 方法
+		if err := order.UpdateStatus(newStatus); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := uc.orderRepo.Update(ctx, order); err != nil {
+		return nil, err
 	}
 
 	updatedOrder, err := uc.orderRepo.FindByID(ctx, orderID)

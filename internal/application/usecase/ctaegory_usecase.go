@@ -26,7 +26,7 @@ func NewCategoryUseCase(
 	}
 }
 
-func (uc *CategoryUseCase) FindAllCategory(ctx context.Context) (*dto.CategoryListResponse, error) {
+func (uc *CategoryUseCase) GetCategories(ctx context.Context) (*dto.CategoryListResponse, error) {
 	categories, err := uc.categoryRepo.FindAll(ctx)
 	if err != nil {
 		return nil, err
@@ -43,7 +43,7 @@ func (uc *CategoryUseCase) FindAllCategory(ctx context.Context) (*dto.CategoryLi
 	}, nil
 }
 
-func (uc *CategoryUseCase) FindByID(ctx context.Context, id string) (*dto.CategoryResponse, error) {
+func (uc *CategoryUseCase) GetCategory(ctx context.Context, id string) (*dto.CategoryResponse, error) {
 	category, err := uc.categoryRepo.FindByID(ctx, id)
 	if err != nil {
 		return nil, err

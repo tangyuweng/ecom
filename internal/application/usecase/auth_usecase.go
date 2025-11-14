@@ -46,7 +46,7 @@ func (uc *AuthUseCase) Register(ctx context.Context, req dto.RegisterRequest) (*
 	}
 
 	return &dto.RegisterResponse{
-		User: dto.UserSummary{
+		User: dto.UserResponse{
 			ID:    user.ID,
 			Email: user.Email,
 			Name:  user.Name,
@@ -79,7 +79,7 @@ func (uc *AuthUseCase) Login(ctx context.Context, req dto.LoginRequest) (*dto.Lo
 	return &dto.LoginResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
-		User: dto.UserSummary{
+		User: dto.UserResponse{
 			ID:    user.ID,
 			Email: user.Email,
 			Name:  user.Name,

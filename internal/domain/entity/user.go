@@ -27,11 +27,13 @@ type User struct {
 }
 
 var (
-	ErrInvalidEmail    = errors.New("invalid email format")
-	ErrInvalidPassword = errors.New("password must be at least 8 characters")
-	ErrInvalidName     = errors.New("name cannot be empty")
-	ErrInvalidPhone    = errors.New("phone cannot be empty")
-	ErrUserNotFound    = errors.New("user not found")
+	ErrInvalidEmail     = errors.New("invalid email format")
+	ErrInvalidPassword  = errors.New("password must be at least 8 characters")
+	ErrInvalidName      = errors.New("name cannot be empty")
+	ErrInvalidPhone     = errors.New("phone cannot be empty")
+	ErrUserNotFound     = errors.New("user not found")
+	ErrUserUnauthorized = errors.New("unauthorized access to or modification of the User is forbidden")
+	ErrInvalidUserRole  = errors.New("invalid role")
 )
 
 func NewUser(email, password, name, phone string) (*User, error) {
@@ -85,6 +87,15 @@ func (u *User) CheckPassword(password string) bool {
 
 func (u *User) IsAdmin() bool {
 	return u.Role == RoleAdmin
+}
+
+func (u *User) UpdateRole(role UserRole) error {
+	if role != RoleUser && role != RoleAdmin {
+		return ErrInvalidUserRole
+	}
+	u.Role = role
+	u.UpdatedAt = time.Now()
+	return nil
 }
 
 func validateEmail(email string) error {

@@ -134,23 +134,6 @@ func (r *MysqlProductRepository) FindByQuery(ctx context.Context, query *entity.
 	return products, int(total), nil
 }
 
-func (r *MysqlProductRepository) UpdateStock(ctx context.Context, id string, quantity int) error {
-	result := r.db.WithContext(ctx).
-		Model(&models.ProductModel{}).
-		Where("id = ?", id).
-		Update("stock_quantity", quantity)
-
-	if result.Error != nil {
-		return result.Error
-	}
-
-	if result.RowsAffected == 0 {
-		return entity.ErrProductNotFound
-	}
-
-	return nil
-}
-
 // 刪除 Category 前先檢查是否有商品使用此類別
 func (r *MysqlProductRepository) ExistsByCategoryID(ctx context.Context, categoryID string) (bool, error) {
 	var count int64
