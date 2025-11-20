@@ -59,11 +59,11 @@ func (uc *AuthUseCase) Register(ctx context.Context, req dto.RegisterRequest) (*
 func (uc *AuthUseCase) Login(ctx context.Context, req dto.LoginRequest) (*dto.LoginResponse, error) {
 	user, err := uc.userRepo.FindByEmail(ctx, req.Email)
 	if err != nil {
-		return nil, errors.New("invalid email or password")
+		return nil, entity.ErrInvalidCredentials
 	}
 
 	if !user.CheckPassword(req.Password) {
-		return nil, errors.New("invalid email or password")
+		return nil, entity.ErrInvalidCredentials
 	}
 
 	accessToken, err := uc.jwtService.GenerateAccessToken(user.ID)

@@ -42,6 +42,13 @@ func SetupRouter(
 			auth.POST("/refresh", authHandler.RefreshToken)
 			auth.POST("/logout", authHandler.Logout)
 		}
+		users := v1.Group("/users")
+		{
+			users.Use(authMiddleware)
+			users.GET("/me", userHandler.GetUser)
+			users.PUT("/me", userHandler.UpdateUser)
+			users.PUT("/me/password", userHandler.UpdateUserPassword)
+		}
 		categories := v1.Group("/categories")
 		{
 			categories.GET("", categoryHandler.GetCategories)

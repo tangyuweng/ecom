@@ -42,18 +42,14 @@ func (uc *UserUseCase) GetUsers(ctx context.Context, userID string) (*dto.UserLi
 	}, nil
 }
 
-// func (uc *UserUseCase) GetUser(ctx context.Context, userID string) (*dto.UserResponse, error) {
-// 	user, err := uc.userRepo.FindByID(ctx, userID)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+func (uc *UserUseCase) GetUser(ctx context.Context, userID string) (*dto.UserResponse, error) {
+	user, err := uc.userRepo.FindByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
 
-// 	if !user.IsAdmin() || user.ID != userID {
-// 		return nil, entity.ErrUserUnauthorized
-// 	}
-
-// 	return uc.toUserResponse(user), nil
-// }
+	return uc.toUserResponse(user), nil
+}
 
 func (uc *UserUseCase) UpdateRole(ctx context.Context, adminID, userID string, req dto.UpdateUserRoleRequest) (*dto.UserResponse, error) {
 	admin, err := uc.userRepo.FindByID(ctx, adminID)
@@ -78,12 +74,60 @@ func (uc *UserUseCase) UpdateRole(ctx context.Context, adminID, userID string, r
 		return nil, err
 	}
 
-	updateUser, err := uc.userRepo.FindByID(ctx, userID)
+	updatedUser, err := uc.userRepo.FindByID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 
-	return uc.toUserResponse(updateUser), nil
+	return uc.toUserResponse(updatedUser), nil
+}
+
+func (uc *UserUseCase) UpdateUser(ctx context.Context, userID string, req dto.UpdateUserRequest) (*dto.UserResponse, error) {
+	user, err := uc.userRepo.FindByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := user.UpdateUser(req.Name, req.Phone); err != nil {
+		return nil, err
+	}
+
+	if err := uc.userRepo.Update(ctx, user); err != nil {
+		return nil, err
+	}
+
+	updatedUser, err := uc.userRepo.FindByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return uc.toUserResponse(updatedUser), nil
+}
+
+func (uc *UserUseCase) UpdateUserPassword(ctx context.Context, userID string, req dto.UpdateUserPasswordRequest) (*dto.UserResponse, error) {
+	user, err := uc.userRepo.FindByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !user.CheckPassword(req.Password) {
+		return nil, entity.ErrInvalidCredentials
+	}
+
+	if err := user.UpdatePassword(req.NewPassword); err != nil {
+		return nil, err
+	}
+
+	if err := uc.userRepo.Update(ctx, user); err != nil {
+		return nil, err
+	}
+
+	updatedUser, err := uc.userRepo.FindByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return uc.toUserResponse(updatedUser), nil
 }
 
 func (uc *UserUseCase) toUserResponse(user *entity.User) *dto.UserResponse {

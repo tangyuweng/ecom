@@ -308,6 +308,26 @@ definitions:
         minimum: 0
         type: integer
     type: object
+  dto.UpdateUserPasswordRequest:
+    properties:
+      new_password:
+        type: string
+      password:
+        type: string
+    required:
+    - new_password
+    - password
+    type: object
+  dto.UpdateUserRequest:
+    properties:
+      name:
+        type: string
+      phone:
+        type: string
+    required:
+    - name
+    - phone
+    type: object
   dto.UpdateUserRoleRequest:
     properties:
       user_role:
@@ -795,11 +815,11 @@ paths:
           schema:
             $ref: '#/definitions/dto.StandardResponse'
         "403":
-          description: 無權限
+          description: 權限不足
           schema:
             $ref: '#/definitions/dto.StandardResponse'
         "404":
-          description: 商品不存在
+          description: 使用者不存在
           schema:
             $ref: '#/definitions/dto.StandardResponse'
         "500":
@@ -1499,6 +1519,129 @@ paths:
       summary: 獲取單一商品
       tags:
       - products
+  /users/me:
+    get:
+      consumes:
+      - application/json
+      description: 獲取使用者資訊
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/dto.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.UserResponse'
+              type: object
+        "401":
+          description: 未授權
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "404":
+          description: 使用者不存在
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "500":
+          description: 伺服器錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: 獲取使用者
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      description: 更新使用者資訊
+      parameters:
+      - description: 使用者資訊
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/dto.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.UserResponse'
+              type: object
+        "400":
+          description: 請求參數錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "401":
+          description: 未授權
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "404":
+          description: 使用者不存在
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "500":
+          description: 伺服器錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: 更新使用者
+      tags:
+      - users
+  /users/me/password:
+    put:
+      consumes:
+      - application/json
+      description: 更改使用者密碼
+      parameters:
+      - description: 舊密碼與新密碼
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateUserPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/dto.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.UserResponse'
+              type: object
+        "400":
+          description: 請求參數錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "401":
+          description: 未授權
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "404":
+          description: 使用者不存在
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "500":
+          description: 伺服器錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: 更改密碼
+      tags:
+      - users
 securityDefinitions:
   BearerAuth:
     in: header
