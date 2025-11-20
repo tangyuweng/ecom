@@ -8,7 +8,7 @@ type RegisterRequest struct {
 }
 
 type RegisterResponse struct {
-	User UserSummary `json:"user"`
+	User UserResponse `json:"user"`
 }
 
 type LoginRequest struct {
@@ -17,9 +17,9 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	AccessToken  string      `json:"access_token"`
-	RefreshToken string      `json:"refresh_token"`
-	User         UserSummary `json:"user"`
+	AccessToken  string       `json:"access_token"`
+	RefreshToken string       `json:"refresh_token"`
+	User         UserResponse `json:"user"`
 }
 
 type RefreshTokenRequest struct {
@@ -27,12 +27,4 @@ type RefreshTokenRequest struct {
 
 type RefreshTokenResponse struct {
 	AccessToken string `json:"access_token"`
-}
-
-type UserSummary struct {
-	ID    string `json:"id"`
-	Email string `json:"email"`
-	Name  string `json:"name"`
-	Phone string `json:"phone"`
-	Role  string `json:"role"`
 }

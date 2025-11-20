@@ -13,6 +13,5 @@ type ProductRepository interface {
 	FindByID(ctx context.Context, id string) (*entity.Product, error)
 	FindByCategoryID(ctx context.Context, id string) ([]*entity.Product, error)
 	FindByQuery(ctx context.Context, query *entity.ProductQuery) ([]*entity.Product, int, error)
-	UpdateStock(ctx context.Context, id string, quantity int) error
 	ExistsByCategoryID(ctx context.Context, categoryID string) (bool, error)
 }

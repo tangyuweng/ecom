@@ -37,7 +37,7 @@ type CreateProductRequest struct {
 	Name          string  `json:"name" binding:"required"`
 	Description   string  `json:"description" binding:"omitempty"`
 	Price         float64 `json:"price" binding:"required,min=0"`
-	StockQuantity int     `json:"stock_quantity" binding:"required,min=0"`
+	StockQuantity int     `json:"stock_quantity" binding:"min=0"`
 	IsActive      bool    `json:"is_active"`
 	CategoryID    string  `json:"category_id"`
 }
@@ -52,5 +52,5 @@ type UpdateProductRequest struct {
 }
 
 type UpdateProductStockRequest struct {
-	StockQuantity int `json:"stock_quantity" binding:"required,min=0"`
+	StockQuantity int `json:"stock_quantity" binding:"min=0"`
 }

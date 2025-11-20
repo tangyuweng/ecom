@@ -176,3 +176,53 @@ func (h *OrderHandler) CancelOrder(c *gin.Context) {
 
 	c.JSON(http.StatusOK, dto.SuccessResponse(response))
 }
+
+// UpdateOrderStatus godoc
+// @Summary      更新訂單狀態
+// @Description  管理員更新訂單狀態，已完成或已取消的訂單不可更新(僅管理員)
+// @Tags         admin
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id path string true "訂單 ID"
+// @Param        request body dto.UpdateOrderStatusRequest true "新狀態"
+// @Success      200 {object} dto.StandardResponse{data=dto.OrderResponse} "更新成功"
+// @Failure      400 {object} dto.StandardResponse "請求參數錯誤或訂單狀態不允許更新"
+// @Failure      401 {object} dto.StandardResponse "未授權"
+// @Failure      403 {object} dto.StandardResponse "無管理員權限"
+// @Failure      404 {object} dto.StandardResponse "訂單不存在"
+// @Failure      500 {object} dto.StandardResponse "伺服器錯誤"
+// @Router       /admin/orders/{id}/status [patch]
+func (h *OrderHandler) UpdateOrderStatus(c *gin.Context) {
+	adminID, ok := middleware.GetUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, dto.ErrorResponse("unauthorized"))
+		return
+	}
+
+	orderID := c.Param("id")
+
+	var req dto.UpdateOrderStatusRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, dto.ErrorResponse(err.Error()))
+		return
+	}
+
+	response, err := h.orderUseCase.UpdateOrderStatus(c.Request.Context(), adminID, orderID, req)
+	if err != nil {
+		statusCode := http.StatusInternalServerError
+		switch err {
+		case entity.ErrOrderNotFound:
+			statusCode = http.StatusNotFound
+		case entity.ErrUserUnauthorized:
+			statusCode = http.StatusForbidden
+		case entity.ErrOrderInvalidStatusTransition, entity.ErrOrderInvalidStatus:
+			statusCode = http.StatusBadRequest
+		}
+
+		c.JSON(statusCode, dto.ErrorResponse(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.SuccessResponse(response))
+}

@@ -46,7 +46,7 @@ func (uc *AuthUseCase) Register(ctx context.Context, req dto.RegisterRequest) (*
 	}
 
 	return &dto.RegisterResponse{
-		User: dto.UserSummary{
+		User: dto.UserResponse{
 			ID:    user.ID,
 			Email: user.Email,
 			Name:  user.Name,
@@ -59,11 +59,11 @@ func (uc *AuthUseCase) Register(ctx context.Context, req dto.RegisterRequest) (*
 func (uc *AuthUseCase) Login(ctx context.Context, req dto.LoginRequest) (*dto.LoginResponse, error) {
 	user, err := uc.userRepo.FindByEmail(ctx, req.Email)
 	if err != nil {
-		return nil, errors.New("invalid email or password")
+		return nil, entity.ErrInvalidCredentials
 	}
 
 	if !user.CheckPassword(req.Password) {
-		return nil, errors.New("invalid email or password")
+		return nil, entity.ErrInvalidCredentials
 	}
 
 	accessToken, err := uc.jwtService.GenerateAccessToken(user.ID)
@@ -79,7 +79,7 @@ func (uc *AuthUseCase) Login(ctx context.Context, req dto.LoginRequest) (*dto.Lo
 	return &dto.LoginResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
-		User: dto.UserSummary{
+		User: dto.UserResponse{
 			ID:    user.ID,
 			Email: user.Email,
 			Name:  user.Name,

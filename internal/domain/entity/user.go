@@ -27,11 +27,14 @@ type User struct {
 }
 
 var (
-	ErrInvalidEmail    = errors.New("invalid email format")
-	ErrInvalidPassword = errors.New("password must be at least 8 characters")
-	ErrInvalidName     = errors.New("name cannot be empty")
-	ErrInvalidPhone    = errors.New("phone cannot be empty")
-	ErrUserNotFound    = errors.New("user not found")
+	ErrInvalidEmail       = errors.New("invalid email format")
+	ErrInvalidPassword    = errors.New("password must be at least 8 characters")
+	ErrInvalidName        = errors.New("name cannot be empty")
+	ErrInvalidPhone       = errors.New("phone cannot be empty")
+	ErrUserNotFound       = errors.New("user not found")
+	ErrUserUnauthorized   = errors.New("unauthorized access to or modification of the User is forbidden")
+	ErrInvalidUserRole    = errors.New("invalid role")
+	ErrInvalidCredentials = errors.New("invalid email or password")
 )
 
 func NewUser(email, password, name, phone string) (*User, error) {
@@ -85,6 +88,45 @@ func (u *User) CheckPassword(password string) bool {
 
 func (u *User) IsAdmin() bool {
 	return u.Role == RoleAdmin
+}
+
+func (u *User) UpdateUser(name, phone string) error {
+	if err := validateName(name); err != nil {
+		return err
+	}
+
+	if err := validatePhone(phone); err != nil {
+		return err
+	}
+
+	u.Name = name
+	u.Phone = phone
+	u.UpdatedAt = time.Now()
+	return nil
+}
+
+func (u *User) UpdateRole(role UserRole) error {
+	if role != RoleUser && role != RoleAdmin {
+		return ErrInvalidUserRole
+	}
+	u.Role = role
+	u.UpdatedAt = time.Now()
+	return nil
+}
+
+func (u *User) UpdatePassword(newPassword string) error {
+	if err := validatePassword(newPassword); err != nil {
+		return err
+	}
+
+	hashPwd, err := hashPassword(newPassword)
+	if err != nil {
+		return err
+	}
+
+	u.Password = hashPwd
+	u.UpdatedAt = time.Now()
+	return nil
 }
 
 func validateEmail(email string) error {

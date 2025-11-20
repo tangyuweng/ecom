@@ -199,12 +199,16 @@ func (uc *ProductUseCase) UpdateProductStock(ctx context.Context, userID, produc
 		return nil, entity.ErrProductUnauthorized
 	}
 
-	_, err = uc.productRepo.FindByID(ctx, productID)
+	product, err := uc.productRepo.FindByID(ctx, productID)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := uc.productRepo.UpdateStock(ctx, productID, req.StockQuantity); err != nil {
+	if err := product.UpdateStockQuantity(req.StockQuantity); err != nil {
+		return nil, err
+	}
+
+	if err := uc.productRepo.Update(ctx, product); err != nil {
 		return nil, err
 	}
 

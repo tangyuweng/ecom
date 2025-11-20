@@ -34,6 +34,22 @@ func (r *MysqlUserRepository) Create(ctx context.Context, user *entity.User) err
 	return nil
 }
 
+func (r *MysqlUserRepository) FindAll(ctx context.Context) ([]*entity.User, error) {
+	var models []models.UserModel
+
+	err := r.db.WithContext(ctx).Find(&models).Error
+	if err != nil {
+		return nil, err
+	}
+
+	users := make([]*entity.User, len(models))
+	for i, model := range models {
+		users[i] = model.ModelToEntity()
+	}
+
+	return users, nil
+}
+
 func (r *MysqlUserRepository) FindByID(ctx context.Context, id string) (*entity.User, error) {
 	var model models.UserModel
 

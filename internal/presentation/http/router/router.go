@@ -12,6 +12,7 @@ import (
 
 func SetupRouter(
 	authUseCase *usecase.AuthUseCase,
+	userUseCase *usecase.UserUseCase,
 	categoryUseCase *usecase.CategoryUseCase,
 	productUseCase *usecase.ProductUseCase,
 	cartUseCase *usecase.CartUseCase,
@@ -24,6 +25,7 @@ func SetupRouter(
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	authHandler := handler.NewAuthHandler(authUseCase, cfg)
+	userHandler := handler.NewUserHandler(userUseCase)
 	categoryHandler := handler.NewCategoryHandler(categoryUseCase)
 	productHandler := handler.NewProductHandler(productUseCase)
 	cartHandler := handler.NewCartHandler(cartUseCase)
@@ -40,23 +42,23 @@ func SetupRouter(
 			auth.POST("/refresh", authHandler.RefreshToken)
 			auth.POST("/logout", authHandler.Logout)
 		}
+		users := v1.Group("/users")
+		{
+			users.Use(authMiddleware)
+			users.GET("/me", userHandler.GetUser)
+			users.PUT("/me", userHandler.UpdateUser)
+			users.PUT("/me/password", userHandler.UpdateUserPassword)
+		}
 		categories := v1.Group("/categories")
 		{
-			categories.GET("", categoryHandler.GetCategoryList)
+			categories.GET("", categoryHandler.GetCategories)
 			categories.GET("/:id", categoryHandler.GetCategory)
-			categories.POST("", authMiddleware, categoryHandler.CreateCategory)
-			categories.PUT("/:id", authMiddleware, categoryHandler.UpdateCategory)
-			categories.DELETE("/:id", authMiddleware, categoryHandler.DeleteCategory)
 		}
 		products := v1.Group("/products")
 		{
 			products.GET("", productHandler.GetProducts)
 			products.GET("/:id", productHandler.GetProduct)
 			products.GET("/category/:id", productHandler.GetProductsByCategory)
-			products.POST("", authMiddleware, productHandler.CreateProduct)
-			products.PUT("/:id", authMiddleware, productHandler.UpdateProduct)
-			products.DELETE("/:id", authMiddleware, productHandler.DeleteProduct)
-			products.PATCH("/:id/stock", authMiddleware, productHandler.UpdateProductStock)
 		}
 		cart := v1.Group("/cart")
 		{
@@ -74,6 +76,20 @@ func SetupRouter(
 			orders.GET("", orderHandler.GetUserOrders)
 			orders.GET("/:id", orderHandler.GetOrder)
 			orders.POST("/:id/cancel", orderHandler.CancelOrder)
+		}
+		admin := v1.Group("/admin")
+		{
+			admin.Use(authMiddleware)
+			admin.GET("/users", userHandler.GetUsers)
+			admin.PATCH("/users/:id/role", userHandler.UpdateUserRole)
+			admin.POST("/categories", categoryHandler.CreateCategory)
+			admin.PUT("/categories/:id", categoryHandler.UpdateCategory)
+			admin.DELETE("/categories/:id", categoryHandler.DeleteCategory)
+			admin.POST("/products", productHandler.CreateProduct)
+			admin.PUT("/products/:id", productHandler.UpdateProduct)
+			admin.DELETE("/products/:id", productHandler.DeleteProduct)
+			admin.PATCH("/products/:id/stock", productHandler.UpdateProductStock)
+			admin.PATCH("/orders/:id/status", orderHandler.UpdateOrderStatus)
 		}
 	}
 

@@ -27,8 +27,8 @@ func NewCategoryHandler(categoryUseCase *usecase.CategoryUseCase) *CategoryHandl
 // @Success      200 {object} dto.StandardResponse{data=dto.CategoryListResponse} "獲取成功"
 // @Failure      500 {object} dto.StandardResponse "伺服器錯誤"
 // @Router       /categories [get]
-func (h *CategoryHandler) GetCategoryList(c *gin.Context) {
-	response, err := h.categoryUseCase.FindAllCategory(c.Request.Context())
+func (h *CategoryHandler) GetCategories(c *gin.Context) {
+	response, err := h.categoryUseCase.GetCategories(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, dto.ErrorResponse(err.Error()))
 		return
@@ -51,7 +51,7 @@ func (h *CategoryHandler) GetCategoryList(c *gin.Context) {
 func (h *CategoryHandler) GetCategory(c *gin.Context) {
 	categoryID := c.Param("id")
 
-	response, err := h.categoryUseCase.FindByID(c.Request.Context(), categoryID)
+	response, err := h.categoryUseCase.GetCategory(c.Request.Context(), categoryID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, dto.ErrorResponse(err.Error()))
 		return
@@ -63,7 +63,7 @@ func (h *CategoryHandler) GetCategory(c *gin.Context) {
 // CreateCategory godoc
 // @Summary      創建新類別
 // @Description  創建新的商品類別(僅管理員)
-// @Tags         categories
+// @Tags         admin
 // @Accept       json
 // @Produce      json
 // @Security     BearerAuth
@@ -73,7 +73,7 @@ func (h *CategoryHandler) GetCategory(c *gin.Context) {
 // @Failure      401 {object} dto.StandardResponse "未授權"
 // @Failure      403 {object} dto.StandardResponse "權限不足"
 // @Failure      500 {object} dto.StandardResponse "伺服器錯誤"
-// @Router       /categories [post]
+// @Router       /admin/categories [post]
 func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
@@ -89,7 +89,7 @@ func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 
 	response, err := h.categoryUseCase.CreateCategory(c.Request.Context(), userID, req)
 	if err != nil {
-		statusCode := http.StatusBadRequest
+		statusCode := http.StatusInternalServerError
 		if err == entity.ErrCategoryUnauthorized {
 			statusCode = http.StatusForbidden
 		}
@@ -103,7 +103,7 @@ func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 // CreateCategory godoc
 // @Summary      更新指定類別
 // @Description  根據 id 更新商品類別(僅管理員)
-// @Tags         categories
+// @Tags         admin
 // @Accept       json
 // @Produce      json
 // @Security     BearerAuth
@@ -113,7 +113,7 @@ func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 // @Failure      401 {object} dto.StandardResponse "未授權"
 // @Failure      403 {object} dto.StandardResponse "權限不足"
 // @Failure      500 {object} dto.StandardResponse "伺服器錯誤"
-// @Router       /categories/:id [put]
+// @Router       /admin/categories/:id [put]
 func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
@@ -129,7 +129,7 @@ func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
 
 	response, err := h.categoryUseCase.UpdateCategory(c.Request.Context(), userID, req.ID, req)
 	if err != nil {
-		statusCode := http.StatusBadRequest
+		statusCode := http.StatusInternalServerError
 		if err == entity.ErrCategoryUnauthorized {
 			statusCode = http.StatusForbidden
 		}
@@ -143,7 +143,7 @@ func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
 // DeleteCategory godoc
 // @Summary      刪除指定類別
 // @Description  根據 ID 刪除商品類別(僅管理員)
-// @Tags         categories
+// @Tags         admin
 // @Accept       json
 // @Produce      json
 // @Security     BearerAuth
@@ -153,7 +153,7 @@ func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
 // @Failure      401 {object} dto.StandardResponse "未授權"
 // @Failure      403 {object} dto.StandardResponse "權限不足"
 // @Failure      500 {object} dto.StandardResponse "伺服器錯誤"
-// @Router       /categories/{id} [delete]
+// @Router       /admin/categories/{id} [delete]
 func (h *CategoryHandler) DeleteCategory(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
@@ -165,7 +165,7 @@ func (h *CategoryHandler) DeleteCategory(c *gin.Context) {
 
 	err := h.categoryUseCase.DeleteCategory(c.Request.Context(), userID, categoryID)
 	if err != nil {
-		statusCode := http.StatusBadRequest
+		statusCode := http.StatusInternalServerError
 		if err == entity.ErrCategoryUnauthorized {
 			statusCode = http.StatusForbidden
 		}

@@ -140,12 +140,13 @@ func main() {
 	)
 
 	authUseCase := usecase.NewAuthUseCase(userRepo, jwtService)
+	userUseCase := usecase.NewUserUseCase(userRepo)
 	categoryUseCase := usecase.NewCategoryUseCase(categoryRepo, userRepo, productRepo)
 	productUseCase := usecase.NewProductUseCase(productRepo, categoryRepo, userRepo)
 	cartUseCase := usecase.NewCartUseCase(cartRepo, productRepo)
-	orderUseCase := usecase.NewOrderUseCase(orderRepo, cartRepo, productRepo)
+	orderUseCase := usecase.NewOrderUseCase(orderRepo, cartRepo, productRepo, userRepo)
 
-	r := router.SetupRouter(authUseCase, categoryUseCase, productUseCase, cartUseCase, orderUseCase, jwtService, cfg)
+	r := router.SetupRouter(authUseCase, userUseCase, categoryUseCase, productUseCase, cartUseCase, orderUseCase, jwtService, cfg)
 
 	log.Printf("Starting server on %s", cfg.Server.Port)
 	log.Printf("Swagger UI: http://localhost%s/swagger/index.html", cfg.Server.Port)
