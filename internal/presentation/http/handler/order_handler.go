@@ -216,7 +216,7 @@ func (h *OrderHandler) UpdateOrderStatus(c *gin.Context) {
 			statusCode = http.StatusNotFound
 		case entity.ErrUserUnauthorized:
 			statusCode = http.StatusForbidden
-		case entity.ErrOrderInvalidStatusTransition, entity.ErrOrderInvalidStatus:
+		case entity.ErrOrderInvalidStatusTransition, entity.ErrOrderInvalidStatus, entity.ErrOrderCannotCancel:
 			statusCode = http.StatusBadRequest
 		}
 

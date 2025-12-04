@@ -6,10 +6,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/tangyuweng/ecom/internal/application/dto"
-	"github.com/tangyuweng/ecom/internal/application/usecase"
+	"github.com/tangyuweng/ecom/internal/domain/service"
 )
 
-func AuthMiddleware(jwtService usecase.JWTService) gin.HandlerFunc {
+func AuthMiddleware(jwtService service.JWTService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {

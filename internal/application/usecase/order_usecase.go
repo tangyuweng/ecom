@@ -6,13 +6,15 @@ import (
 	"github.com/tangyuweng/ecom/internal/application/dto"
 	"github.com/tangyuweng/ecom/internal/domain/entity"
 	"github.com/tangyuweng/ecom/internal/domain/repository"
+	"github.com/tangyuweng/ecom/internal/domain/service"
 )
 
 type OrderUseCase struct {
-	orderRepo   repository.OrderRepository
-	cartRepo    repository.CartRepository
-	productRepo repository.ProductRepository
-	userRepo    repository.UserRepository
+	orderRepo       repository.OrderRepository
+	cartRepo        repository.CartRepository
+	productRepo     repository.ProductRepository
+	userRepo        repository.UserRepository
+	notificationSvc service.NotificationService
 }
 
 func NewOrderUseCase(
@@ -20,12 +22,14 @@ func NewOrderUseCase(
 	cartRepo repository.CartRepository,
 	productRepo repository.ProductRepository,
 	userRepo repository.UserRepository,
+	notificationSvc service.NotificationService,
 ) *OrderUseCase {
 	return &OrderUseCase{
-		orderRepo:   orderRepo,
-		cartRepo:    cartRepo,
-		productRepo: productRepo,
-		userRepo:    userRepo,
+		orderRepo:       orderRepo,
+		cartRepo:        cartRepo,
+		productRepo:     productRepo,
+		userRepo:        userRepo,
+		notificationSvc: notificationSvc,
 	}
 }
 
@@ -178,6 +182,16 @@ func (uc *OrderUseCase) CancelOrder(ctx context.Context, userID, orderID string)
 		return nil, err
 	}
 
+	notification := service.NewNotification(
+		service.NotificationTypeOrderStatusUpdated,
+		map[string]interface{}{
+			"orderID": updatedOrder.ID,
+			"status":  string(updatedOrder.Status),
+			"message": getStatusMessage(updatedOrder.Status),
+		},
+	)
+	_ = uc.notificationSvc.NotifyUser(ctx, userID, notification)
+
 	return uc.toOrderResponse(updatedOrder), nil
 }
 
@@ -246,6 +260,16 @@ func (uc *OrderUseCase) UpdateOrderStatus(ctx context.Context, adminID, orderID 
 		return nil, err
 	}
 
+	notification := service.NewNotification(
+		service.NotificationTypeOrderStatusUpdated,
+		map[string]interface{}{
+			"orderID": updatedOrder.ID,
+			"status":  string(updatedOrder.Status),
+			"message": getStatusMessage(updatedOrder.Status),
+		},
+	)
+	_ = uc.notificationSvc.NotifyUser(ctx, updatedOrder.UserID, notification)
+
 	return uc.toOrderResponse(updatedOrder), nil
 }
 
@@ -298,4 +322,22 @@ func (uc *OrderUseCase) toOrderItemResponse(item *entity.OrderItem) *dto.OrderIt
 	}
 
 	return response
+}
+
+// getStatusMessage 根據訂單狀態返回中文訊息
+func getStatusMessage(status entity.OrderStatus) string {
+	switch status {
+	case entity.OrderStatusPending:
+		return "訂單待處理"
+	case entity.OrderStatusProcessing:
+		return "訂單處理中"
+	case entity.OrderStatusShipped:
+		return "訂單已出貨"
+	case entity.OrderStatusCompleted:
+		return "訂單已完成"
+	case entity.OrderStatusCancelled:
+		return "訂單已取消"
+	default:
+		return "訂單狀態已更新"
+	}
 }

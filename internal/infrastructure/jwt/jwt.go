@@ -5,9 +5,10 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/tangyuweng/ecom/internal/domain/service"
 )
 
-type JWTServiceImpl struct {
+type JWTSvc struct {
 	secretKey          string
 	accessTokenExpiry  time.Duration
 	refreshTokenExpiry time.Duration
@@ -18,15 +19,15 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-func NewJWTService(secretKey string, accessTokenExpiry, refreshTokenExpiry time.Duration) *JWTServiceImpl {
-	return &JWTServiceImpl{
+func NewJWT(secretKey string, accessTokenExpiry, refreshTokenExpiry time.Duration) service.JWTService {
+	return &JWTSvc{
 		secretKey:          secretKey,
 		accessTokenExpiry:  accessTokenExpiry,
 		refreshTokenExpiry: refreshTokenExpiry,
 	}
 }
 
-func (s *JWTServiceImpl) GenerateAccessToken(userID string) (string, error) {
+func (s *JWTSvc) GenerateAccessToken(userID string) (string, error) {
 	expirationTime := time.Now().Add(s.accessTokenExpiry)
 
 	claims := &Claims{
@@ -48,7 +49,7 @@ func (s *JWTServiceImpl) GenerateAccessToken(userID string) (string, error) {
 	return tokenString, nil
 }
 
-func (s *JWTServiceImpl) GenerateRefreshToken(userID string) (string, error) {
+func (s *JWTSvc) GenerateRefreshToken(userID string) (string, error) {
 	expirationTime := time.Now().Add(s.refreshTokenExpiry)
 
 	claims := &Claims{
@@ -70,7 +71,7 @@ func (s *JWTServiceImpl) GenerateRefreshToken(userID string) (string, error) {
 	return tokenString, nil
 }
 
-func (s *JWTServiceImpl) ValidateToken(tokenString string) (string, error) {
+func (s *JWTSvc) ValidateToken(tokenString string) (string, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("invalid signing method")

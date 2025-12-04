@@ -7,23 +7,18 @@ import (
 	"github.com/tangyuweng/ecom/internal/application/dto"
 	"github.com/tangyuweng/ecom/internal/domain/entity"
 	"github.com/tangyuweng/ecom/internal/domain/repository"
+	"github.com/tangyuweng/ecom/internal/domain/service"
 )
 
-type JWTService interface {
-	GenerateAccessToken(userID string) (string, error)
-	GenerateRefreshToken(userID string) (string, error)
-	ValidateToken(token string) (string, error)
-}
-
 type AuthUseCase struct {
-	userRepo   repository.UserRepository
-	jwtService JWTService
+	userRepo repository.UserRepository
+	jwtSvc   service.JWTService
 }
 
-func NewAuthUseCase(userRepo repository.UserRepository, jwtService JWTService) *AuthUseCase {
+func NewAuthUseCase(userRepo repository.UserRepository, jwtSvc service.JWTService) *AuthUseCase {
 	return &AuthUseCase{
-		userRepo:   userRepo,
-		jwtService: jwtService,
+		userRepo: userRepo,
+		jwtSvc:   jwtSvc,
 	}
 }
 
@@ -66,12 +61,12 @@ func (uc *AuthUseCase) Login(ctx context.Context, req dto.LoginRequest) (*dto.Lo
 		return nil, entity.ErrInvalidCredentials
 	}
 
-	accessToken, err := uc.jwtService.GenerateAccessToken(user.ID)
+	accessToken, err := uc.jwtSvc.GenerateAccessToken(user.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	refreshToken, err := uc.jwtService.GenerateRefreshToken(user.ID)
+	refreshToken, err := uc.jwtSvc.GenerateRefreshToken(user.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +85,7 @@ func (uc *AuthUseCase) Login(ctx context.Context, req dto.LoginRequest) (*dto.Lo
 }
 
 func (uc *AuthUseCase) RefreshToken(ctx context.Context, refreshToken string) (*dto.RefreshTokenResponse, error) {
-	userID, err := uc.jwtService.ValidateToken(refreshToken)
+	userID, err := uc.jwtSvc.ValidateToken(refreshToken)
 	if err != nil {
 		return nil, errors.New("invalid or expired refresh token")
 	}
@@ -100,7 +95,7 @@ func (uc *AuthUseCase) RefreshToken(ctx context.Context, refreshToken string) (*
 		return nil, entity.ErrUserNotFound
 	}
 
-	newAccessToken, err := uc.jwtService.GenerateAccessToken(userID)
+	newAccessToken, err := uc.jwtSvc.GenerateAccessToken(userID)
 	if err != nil {
 		return nil, err
 	}

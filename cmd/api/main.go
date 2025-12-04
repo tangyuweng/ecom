@@ -12,6 +12,7 @@ import (
 	"github.com/tangyuweng/ecom/internal/infrastructure/jwt"
 	"github.com/tangyuweng/ecom/internal/infrastructure/mysql"
 	"github.com/tangyuweng/ecom/internal/infrastructure/seed"
+	"github.com/tangyuweng/ecom/internal/infrastructure/websocket"
 	"github.com/tangyuweng/ecom/internal/presentation/http/router"
 )
 
@@ -133,7 +134,12 @@ func main() {
 		return
 	}
 
-	jwtService := jwt.NewJWTService(
+	wsHub := websocket.NewHub()
+	go wsHub.Run()
+
+	notificationSvc := websocket.NewWsNotificationSvc(wsHub)
+
+	jwtService := jwt.NewJWT(
 		cfg.JWT.Secret,
 		time.Duration(cfg.JWT.AccessTokenExpiry)*time.Hour,
 		time.Duration(cfg.JWT.RefreshTokenExpiry)*time.Hour,
@@ -144,9 +150,9 @@ func main() {
 	categoryUseCase := usecase.NewCategoryUseCase(categoryRepo, userRepo, productRepo)
 	productUseCase := usecase.NewProductUseCase(productRepo, categoryRepo, userRepo)
 	cartUseCase := usecase.NewCartUseCase(cartRepo, productRepo)
-	orderUseCase := usecase.NewOrderUseCase(orderRepo, cartRepo, productRepo, userRepo)
+	orderUseCase := usecase.NewOrderUseCase(orderRepo, cartRepo, productRepo, userRepo, notificationSvc)
 
-	r := router.SetupRouter(authUseCase, userUseCase, categoryUseCase, productUseCase, cartUseCase, orderUseCase, jwtService, cfg)
+	r := router.SetupRouter(authUseCase, userUseCase, categoryUseCase, productUseCase, cartUseCase, orderUseCase, jwtService, cfg, wsHub)
 
 	log.Printf("Starting server on %s", cfg.Server.Port)
 	log.Printf("Swagger UI: http://localhost%s/swagger/index.html", cfg.Server.Port)
