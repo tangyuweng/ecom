@@ -32,6 +32,19 @@ var (
 	ErrOrderInvalidItemQuantity     = errors.New("item quantity must be greater than 0")
 )
 
+type OrderQuery struct {
+	Status    *OrderStatus // 訂單狀態過濾
+	UserID    *string      // 用戶ID過濾
+	MinTotal  *float64     // 最小金額過濾
+	MaxTotal  *float64     // 最大金額過濾
+	StartDate *time.Time   // 訂單開始日期過濾
+	EndDate   *time.Time   // 訂單結束日期過濾
+	SortBy    string       // 排序欄位 (order_date, total_amount, status, created_at)
+	SortOrder string       // 排序方向 (asc, desc)
+	Page      int          // 頁碼
+	PageSize  int          // 每頁數量
+}
+
 type Order struct {
 	ID              string
 	UserID          string

@@ -273,6 +273,65 @@ func (uc *OrderUseCase) UpdateOrderStatus(ctx context.Context, adminID, orderID 
 	return uc.toOrderResponse(updatedOrder), nil
 }
 
+// GetAllOrders 管理員獲取所有訂單（支援複合式查詢、分頁、排序）
+func (uc *OrderUseCase) GetAllOrders(ctx context.Context, adminID string, req dto.OrderListRequest) (*dto.OrderListResponse, error) {
+	admin, err := uc.userRepo.FindByID(ctx, adminID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !admin.IsAdmin() {
+		return nil, entity.ErrUserUnauthorized
+	}
+
+	// 設置默認值
+	if req.Page == 0 {
+		req.Page = 1
+	}
+	if req.PageSize == 0 {
+		req.PageSize = 20
+	}
+	if req.SortBy == "" {
+		req.SortBy = "created_at"
+	}
+	if req.SortOrder == "" {
+		req.SortOrder = "desc"
+	}
+
+	query := &entity.OrderQuery{
+		UserID:    req.UserID,
+		MinTotal:  req.MinTotal,
+		MaxTotal:  req.MaxTotal,
+		StartDate: req.StartDate,
+		EndDate:   req.EndDate,
+		SortBy:    req.SortBy,
+		SortOrder: req.SortOrder,
+		Page:      req.Page,
+		PageSize:  req.PageSize,
+	}
+
+	// 處理狀態過濾
+	if req.Status != nil && *req.Status != "" {
+		status := entity.OrderStatus(*req.Status)
+		query.Status = &status
+	}
+
+	orders, total, err := uc.orderRepo.FindByQuery(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	orderResponses := make([]*dto.OrderResponse, len(orders))
+	for i, order := range orders {
+		orderResponses[i] = uc.toOrderResponse(order)
+	}
+
+	return &dto.OrderListResponse{
+		Total:  total,
+		Orders: orderResponses,
+	}, nil
+}
+
 func (uc *OrderUseCase) toOrderResponse(order *entity.Order) *dto.OrderResponse {
 	items := make([]*dto.OrderItemResponse, len(order.Items))
 	for i, item := range order.Items {

@@ -99,6 +99,7 @@ func SetupRouter(
 			admin.PUT("/products/:id", productHandler.UpdateProduct)
 			admin.DELETE("/products/:id", productHandler.DeleteProduct)
 			admin.PATCH("/products/:id/stock", productHandler.UpdateProductStock)
+			admin.GET("/orders", orderHandler.GetAllOrders)
 			admin.PATCH("/orders/:id/status", orderHandler.UpdateOrderStatus)
 		}
 

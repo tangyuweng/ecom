@@ -225,6 +225,153 @@
                 }
             }
         },
+        "/admin/orders": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "管理員取得所有訂單（支援複合式查詢、分頁、排序）(僅管理員)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "取得所有訂單",
+                "parameters": [
+                    {
+                        "enum": [
+                            "Pending",
+                            "Processing",
+                            "Shipped",
+                            "Completed",
+                            "Cancelled"
+                        ],
+                        "type": "string",
+                        "description": "訂單狀態過濾",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "用戶 ID 過濾",
+                        "name": "user_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "最小金額過濾",
+                        "name": "min_total",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "最大金額過濾",
+                        "name": "max_total",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "訂單開始日期 (YYYY-MM-DD)",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "訂單結束日期 (YYYY-MM-DD)",
+                        "name": "end_date",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "order_date",
+                            "total_amount",
+                            "status",
+                            "created_at"
+                        ],
+                        "type": "string",
+                        "default": "created_at",
+                        "description": "排序欄位",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "default": "desc",
+                        "description": "排序方向",
+                        "name": "sort_order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "頁碼",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每頁數量",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "查詢成功",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/dto.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.OrderListResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "請求參數錯誤",
+                        "schema": {
+                            "$ref": "#/definitions/dto.StandardResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "未授權",
+                        "schema": {
+                            "$ref": "#/definitions/dto.StandardResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "無管理員權限",
+                        "schema": {
+                            "$ref": "#/definitions/dto.StandardResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "伺服器錯誤",
+                        "schema": {
+                            "$ref": "#/definitions/dto.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/orders/{id}/status": {
             "patch": {
                 "security": [
@@ -2329,6 +2476,20 @@
                 },
                 "updated_at": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.OrderListResponse": {
+            "type": "object",
+            "properties": {
+                "orders": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.OrderResponse"
+                    }
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },

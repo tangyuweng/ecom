@@ -155,6 +155,15 @@ definitions:
       updated_at:
         type: string
     type: object
+  dto.OrderListResponse:
+    properties:
+      orders:
+        items:
+          $ref: '#/definitions/dto.OrderResponse'
+        type: array
+      total:
+        type: integer
+    type: object
   dto.OrderResponse:
     properties:
       created_at:
@@ -498,6 +507,103 @@ paths:
       security:
       - BearerAuth: []
       summary: 刪除指定類別
+      tags:
+      - admin
+  /admin/orders:
+    get:
+      consumes:
+      - application/json
+      description: 管理員取得所有訂單（支援複合式查詢、分頁、排序）(僅管理員)
+      parameters:
+      - description: 訂單狀態過濾
+        enum:
+        - Pending
+        - Processing
+        - Shipped
+        - Completed
+        - Cancelled
+        in: query
+        name: status
+        type: string
+      - description: 用戶 ID 過濾
+        in: query
+        name: user_id
+        type: string
+      - description: 最小金額過濾
+        in: query
+        name: min_total
+        type: number
+      - description: 最大金額過濾
+        in: query
+        name: max_total
+        type: number
+      - description: 訂單開始日期 (YYYY-MM-DD)
+        in: query
+        name: start_date
+        type: string
+      - description: 訂單結束日期 (YYYY-MM-DD)
+        in: query
+        name: end_date
+        type: string
+      - default: created_at
+        description: 排序欄位
+        enum:
+        - order_date
+        - total_amount
+        - status
+        - created_at
+        in: query
+        name: sort_by
+        type: string
+      - default: desc
+        description: 排序方向
+        enum:
+        - asc
+        - desc
+        in: query
+        name: sort_order
+        type: string
+      - default: 1
+        description: 頁碼
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: 每頁數量
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 查詢成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/dto.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.OrderListResponse'
+              type: object
+        "400":
+          description: 請求參數錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "401":
+          description: 未授權
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "403":
+          description: 無管理員權限
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+        "500":
+          description: 伺服器錯誤
+          schema:
+            $ref: '#/definitions/dto.StandardResponse'
+      security:
+      - BearerAuth: []
+      summary: 取得所有訂單
       tags:
       - admin
   /admin/orders/{id}/status:

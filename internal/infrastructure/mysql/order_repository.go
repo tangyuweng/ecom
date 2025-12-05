@@ -88,6 +88,63 @@ func (r *MysqlOrderRepository) FindByUserID(ctx context.Context, userID string) 
 	return orders, nil
 }
 
+func (r *MysqlOrderRepository) FindByQuery(ctx context.Context, query *entity.OrderQuery) ([]*entity.Order, int, error) {
+	var orderModels []models.OrderModel
+	var total int64
+
+	db := r.db.WithContext(ctx)
+
+	// 構建動態查詢條件
+	if query.Status != nil {
+		db = db.Where("status = ?", *query.Status)
+	}
+
+	if query.UserID != nil && *query.UserID != "" {
+		db = db.Where("user_id = ?", *query.UserID)
+	}
+
+	if query.MinTotal != nil {
+		db = db.Where("total_amount >= ?", *query.MinTotal)
+	}
+
+	if query.MaxTotal != nil {
+		db = db.Where("total_amount <= ?", *query.MaxTotal)
+	}
+
+	if query.StartDate != nil {
+		db = db.Where("order_date >= ?", *query.StartDate)
+	}
+
+	if query.EndDate != nil {
+		db = db.Where("order_date <= ?", *query.EndDate)
+	}
+
+	// 計算總數
+	if err := db.Model(&models.OrderModel{}).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// 應用排序
+	orderClause := query.SortBy + " " + query.SortOrder
+	db = db.Order(orderClause)
+
+	// 應用分頁
+	offset := (query.Page - 1) * query.PageSize
+	db = db.Offset(offset).Limit(query.PageSize)
+
+	// 查詢訂單並預加載關聯數據
+	if err := db.Preload("Items.Product.Category").Find(&orderModels).Error; err != nil {
+		return nil, 0, err
+	}
+
+	orders := make([]*entity.Order, len(orderModels))
+	for i, model := range orderModels {
+		orders[i] = model.ModelToEntity()
+	}
+
+	return orders, int(total), nil
+}
+
 func (r *MysqlOrderRepository) Update(ctx context.Context, order *entity.Order) error {
 	var model models.OrderModel
 	model.ModelFromEntity(order)

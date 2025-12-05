@@ -177,6 +177,57 @@ func (h *OrderHandler) CancelOrder(c *gin.Context) {
 	c.JSON(http.StatusOK, dto.SuccessResponse(response))
 }
 
+// GetAllOrders godoc
+// @Summary      取得所有訂單
+// @Description  管理員取得所有訂單（支援複合式查詢、分頁、排序）(僅管理員)
+// @Tags         admin
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        status query string false "訂單狀態過濾" Enums(Pending, Processing, Shipped, Completed, Cancelled)
+// @Param        user_id query string false "用戶 ID 過濾"
+// @Param        min_total query number false "最小金額過濾"
+// @Param        max_total query number false "最大金額過濾"
+// @Param        start_date query string false "訂單開始日期 (YYYY-MM-DD)"
+// @Param        end_date query string false "訂單結束日期 (YYYY-MM-DD)"
+// @Param        sort_by query string false "排序欄位" Enums(order_date, total_amount, status, created_at) default(created_at)
+// @Param        sort_order query string false "排序方向" Enums(asc, desc) default(desc)
+// @Param        page query int false "頁碼" default(1)
+// @Param        page_size query int false "每頁數量" default(20)
+// @Success      200 {object} dto.StandardResponse{data=dto.OrderListResponse} "查詢成功"
+// @Failure      400 {object} dto.StandardResponse "請求參數錯誤"
+// @Failure      401 {object} dto.StandardResponse "未授權"
+// @Failure      403 {object} dto.StandardResponse "無管理員權限"
+// @Failure      500 {object} dto.StandardResponse "伺服器錯誤"
+// @Router       /admin/orders [get]
+func (h *OrderHandler) GetAllOrders(c *gin.Context) {
+	adminID, ok := middleware.GetUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, dto.ErrorResponse("unauthorized"))
+		return
+	}
+
+	var req dto.OrderListRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		c.JSON(http.StatusBadRequest, dto.ErrorResponse(err.Error()))
+		return
+	}
+
+	response, err := h.orderUseCase.GetAllOrders(c.Request.Context(), adminID, req)
+	if err != nil {
+		statusCode := http.StatusInternalServerError
+		switch err {
+		case entity.ErrUserUnauthorized:
+			statusCode = http.StatusForbidden
+		}
+
+		c.JSON(statusCode, dto.ErrorResponse(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.SuccessResponse(response))
+}
+
 // UpdateOrderStatus godoc
 // @Summary      更新訂單狀態
 // @Description  管理員更新訂單狀態，已完成或已取消的訂單不可更新(僅管理員)
