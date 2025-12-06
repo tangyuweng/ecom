@@ -78,6 +78,22 @@ func (r *MysqlUserRepository) FindByEmail(ctx context.Context, email string) (*e
 	return model.ModelToEntity(), nil
 }
 
+func (r *MysqlUserRepository) FindByAdmin(ctx context.Context) ([]*entity.User, error) {
+	var models []models.UserModel
+
+	err := r.db.WithContext(ctx).Where("role = ?", "admin").Find(&models).Error
+	if err != nil {
+		return nil, err
+	}
+
+	users := make([]*entity.User, len(models))
+	for i, model := range models {
+		users[i] = model.ModelToEntity()
+	}
+
+	return users, nil
+}
+
 func (r *MysqlUserRepository) Update(ctx context.Context, user *entity.User) error {
 	var model models.UserModel
 	model.ModelFromEntity(user)

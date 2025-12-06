@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/tangyuweng/ecom/internal/domain/entity"
 	"github.com/tangyuweng/ecom/internal/domain/service"
 )
 
@@ -15,7 +16,7 @@ func NewWsNotificationSvc(hub *Hub) service.NotificationService {
 	return &WsNotificationSvc{hub: hub}
 }
 
-func (s *WsNotificationSvc) NotifyUser(ctx context.Context, userID string, notification *service.Notification) error {
+func (s *WsNotificationSvc) NotifyUser(ctx context.Context, userID string, notification *entity.Notification) error {
 	data, err := json.Marshal(notification)
 	if err != nil {
 		return err
@@ -25,7 +26,7 @@ func (s *WsNotificationSvc) NotifyUser(ctx context.Context, userID string, notif
 	return nil
 }
 
-func (s *WsNotificationSvc) Broadcast(ctx context.Context, notification *service.Notification) error {
+func (s *WsNotificationSvc) Broadcast(ctx context.Context, notification *entity.Notification) error {
 	data, err := json.Marshal(notification)
 	if err != nil {
 		return err

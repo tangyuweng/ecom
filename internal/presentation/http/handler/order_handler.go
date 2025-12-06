@@ -52,7 +52,7 @@ func (h *OrderHandler) CreateOrderFromCart(c *gin.Context) {
 		switch err {
 		case entity.ErrEmptyCart:
 			statusCode = http.StatusBadRequest
-		case entity.ErrProductNotFound:
+		case entity.ErrProductNotFound, entity.ErrCartNotFound:
 			statusCode = http.StatusNotFound
 		case entity.ErrProductInsufficientStock:
 			statusCode = http.StatusConflict

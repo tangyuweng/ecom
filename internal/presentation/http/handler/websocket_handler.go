@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/tangyuweng/ecom/internal/application/dto"
 	ws "github.com/tangyuweng/ecom/internal/infrastructure/websocket"
@@ -41,11 +42,15 @@ func (h *WebSocketHandler) HandlerNotfications(c *gin.Context) {
 		return
 	}
 
+	// 生成唯一的 connectionID
+	connectionID := uuid.New().String()
+
 	client := &ws.Client{
-		Hub:    h.hub,
-		Conn:   &ws.Conn{Conn: conn},
-		Send:   make(chan []byte, 256),
-		UserID: userID,
+		Hub:          h.hub,
+		Conn:         &ws.Conn{Conn: conn},
+		Send:         make(chan []byte, 256),
+		UserID:       userID,
+		ConnectionID: connectionID,
 	}
 
 	client.Hub.RegisterClient(client)
@@ -54,5 +59,5 @@ func (h *WebSocketHandler) HandlerNotfications(c *gin.Context) {
 	go client.WritePump()
 	go client.ReadPump()
 
-	log.Printf("WebSocket connection established for user: %s", userID)
+	log.Printf("WebSocket connection established for user: %s (connectionID: %s)", userID, connectionID)
 }

@@ -7,19 +7,21 @@ import (
 
 // Client 代表一個 WebSocket 連線的客戶端
 type Client struct {
-	Hub    *Hub
-	Conn   *Conn
-	Send   chan []byte
-	UserID string
+	Hub          *Hub
+	Conn         *Conn
+	Send         chan []byte
+	UserID       string
+	ConnectionID string // 唯一連線 ID
 }
 
 // Hub 管理所有的 WebSocket 連線
 type Hub struct {
-	clients    map[string]*Client // 已註冊的客戶端（key 是 userID）
-	register   chan *Client       // 註冊請求
-	unregister chan *Client       // 取消註冊請求
-	broadcast  chan []byte        // 廣播訊息給所有客戶端
-	sendToUser chan *UserMessage  // 發送訊息給特定用戶
+	clients    map[string]*Client  // 已註冊的客戶端（key 是 connectionID）
+	userIndex  map[string][]string // userID -> []connectionID 的映射
+	register   chan *Client        // 註冊請求
+	unregister chan *Client        // 取消註冊請求
+	broadcast  chan []byte         // 廣播訊息給所有客戶端
+	sendToUser chan *UserMessage   // 發送訊息給特定用戶
 	mu         sync.RWMutex
 }
 
@@ -32,6 +34,7 @@ type UserMessage struct {
 func NewHub() *Hub {
 	return &Hub{
 		clients:    make(map[string]*Client),
+		userIndex:  make(map[string][]string),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 		broadcast:  make(chan []byte),
@@ -45,46 +48,72 @@ func (h *Hub) Run() {
 		select {
 		case client := <-h.register:
 			h.mu.Lock()
-			h.clients[client.UserID] = client
+			h.clients[client.ConnectionID] = client
+
+			h.userIndex[client.UserID] = append(h.userIndex[client.UserID], client.ConnectionID)
+			log.Printf("User %s connected (connectionID: %s), total connections: %d",
+				client.UserID, client.ConnectionID, len(h.userIndex[client.UserID]))
 			h.mu.Unlock()
-			log.Printf("Client connected: %s (total: %d)", client.UserID, len(h.clients))
 
 		case client := <-h.unregister:
 			h.mu.Lock()
-			if _, ok := h.clients[client.UserID]; ok {
-				delete(h.clients, client.UserID)
+			if _, ok := h.clients[client.ConnectionID]; ok {
+				delete(h.clients, client.ConnectionID)
 				close(client.Send)
-				log.Printf("Client disconnected: %s (total: %d)", client.UserID, len(h.clients))
+
+				connections := h.userIndex[client.UserID]
+				for i, connID := range connections {
+					if connID == client.ConnectionID {
+						h.userIndex[client.UserID] = append(connections[:i], connections[i+1:]...)
+						break
+					}
+				}
+
+				if len(h.userIndex[client.UserID]) == 0 {
+					delete(h.userIndex, client.UserID)
+				}
+
+				log.Printf("User %s disconnected (connectionID: %s), remaining connections: %d",
+					client.UserID, client.ConnectionID, len(h.userIndex[client.UserID]))
 			}
 			h.mu.Unlock()
 
 		case message := <-h.broadcast:
-			h.mu.RLock()
-			for _, client := range h.clients {
+			h.mu.Lock()
+			for connID, client := range h.clients {
 				select {
 				case client.Send <- message:
 				default:
 					close(client.Send)
-					delete(h.clients, client.UserID)
+					delete(h.clients, connID)
 				}
 			}
-			h.mu.RUnlock()
+			h.mu.Unlock()
 
 		case userMsg := <-h.sendToUser:
-			h.mu.RLock()
-			if client, ok := h.clients[userMsg.UserID]; ok {
-				select {
-				case client.Send <- userMsg.Message:
-					log.Printf("Message sent to user: %s", userMsg.UserID)
-				default:
-					close(client.Send)
-					delete(h.clients, client.UserID)
-					log.Printf("Failed to send message to user: %s", userMsg.UserID)
-				}
-			} else {
+			h.mu.Lock()
+			connectionIDs, ok := h.userIndex[userMsg.UserID]
+			if !ok || len(connectionIDs) == 0 {
 				log.Printf("User not connected: %s", userMsg.UserID)
+				h.mu.Unlock()
+				continue
 			}
-			h.mu.RUnlock()
+
+			// 向該用戶的所有連線發送消息
+			for _, connID := range connectionIDs {
+				if client, ok := h.clients[connID]; ok {
+					select {
+					case client.Send <- userMsg.Message:
+						log.Printf("Message sent to user %s (connectionID: %s)", userMsg.UserID, connID)
+					default:
+						// 發送失敗，關閉該連線
+						close(client.Send)
+						delete(h.clients, connID)
+						log.Printf("Failed to send to user %s (connectionID: %s), connection closed", userMsg.UserID, connID)
+					}
+				}
+			}
+			h.mu.Unlock()
 		}
 	}
 }
@@ -102,11 +131,11 @@ func (h *Hub) Broadcast(message []byte) {
 	h.broadcast <- message
 }
 
-// GetConnectedUserCount 獲取當前連線的用戶數量
+// GetConnectedUserCount 獲取當前連線的用戶數量（唯一用戶數）
 func (h *Hub) GetConnectedUserCount() int {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
-	return len(h.clients)
+	return len(h.userIndex)
 }
 
 func (h *Hub) RegisterClient(client *Client) {

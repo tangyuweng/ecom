@@ -106,6 +106,25 @@ func (uc *OrderUseCase) CreateOrderFromCart(ctx context.Context, userID string, 
 		return nil, err
 	}
 
+	// 通知所有管理員有新訂單
+	notification := entity.NewNotification(
+		entity.NotificationTypeNewOrderCreated,
+		map[string]interface{}{
+			"orderID":     createdOrder.ID,
+			"userID":      createdOrder.UserID,
+			"totalAmount": createdOrder.TotalAmount,
+			"status":      string(createdOrder.Status),
+			"message":     "新訂單已建立",
+		},
+	)
+
+	admins, err := uc.userRepo.FindByAdmin(ctx)
+	if err == nil {
+		for _, admin := range admins {
+			_ = uc.notificationSvc.NotifyUser(ctx, admin.ID, notification)
+		}
+	}
+
 	return uc.toOrderResponse(createdOrder), nil
 }
 
@@ -182,14 +201,22 @@ func (uc *OrderUseCase) CancelOrder(ctx context.Context, userID, orderID string)
 		return nil, err
 	}
 
-	notification := service.NewNotification(
-		service.NotificationTypeOrderStatusUpdated,
+	notification := entity.NewNotification(
+		entity.NotificationTypeOrderStatusUpdated,
 		map[string]interface{}{
 			"orderID": updatedOrder.ID,
 			"status":  string(updatedOrder.Status),
 			"message": getStatusMessage(updatedOrder.Status),
 		},
 	)
+
+	admins, err := uc.userRepo.FindByAdmin(ctx)
+	if err == nil {
+		for _, admin := range admins {
+			_ = uc.notificationSvc.NotifyUser(ctx, admin.ID, notification)
+		}
+	}
+
 	_ = uc.notificationSvc.NotifyUser(ctx, userID, notification)
 
 	return uc.toOrderResponse(updatedOrder), nil
@@ -260,8 +287,8 @@ func (uc *OrderUseCase) UpdateOrderStatus(ctx context.Context, adminID, orderID 
 		return nil, err
 	}
 
-	notification := service.NewNotification(
-		service.NotificationTypeOrderStatusUpdated,
+	notification := entity.NewNotification(
+		entity.NotificationTypeOrderStatusUpdated,
 		map[string]interface{}{
 			"orderID": updatedOrder.ID,
 			"status":  string(updatedOrder.Status),

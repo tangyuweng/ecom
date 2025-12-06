@@ -1,26 +1,13 @@
 package service
 
-import "context"
+import (
+	"context"
+
+	"github.com/tangyuweng/ecom/internal/domain/entity"
+)
 
 type NotificationService interface {
-	NotifyUser(ctx context.Context, userID string, notification *Notification) error
-	Broadcast(ctx context.Context, notification *Notification) error
+	NotifyUser(ctx context.Context, userID string, notification *entity.Notification) error
+	Broadcast(ctx context.Context, notification *entity.Notification) error
 	GetConnectedUserCount() int
 }
-
-type Notification struct {
-	Type    string                 `json:"type"`
-	Payload map[string]interface{} `json:"payload"`
-}
-
-func NewNotification(notificationType string, payload map[string]interface{}) *Notification {
-	return &Notification{
-		Type:    notificationType,
-		Payload: payload,
-	}
-}
-
-const (
-	NotificationTypeOrderStatusUpdated = "order_status_updated"
-	NotificationTypeOrderCancelled     = "order_cancelled"
-)

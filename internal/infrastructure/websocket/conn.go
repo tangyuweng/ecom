@@ -9,8 +9,8 @@ import (
 
 const (
 	writeWait      = 10 * time.Second    // 寫入訊息的超時時間
-	pongWait       = 60 * time.Second    // Pong 等待時間（心跳檢測）
-	pingPeriod     = (pongWait * 9) / 10 // Ping 間隔（必須小於 pongWait）
+	pongWait       = 15 * time.Second    // Pong 等待時間（心跳檢測）- 測試用，改為 15 秒
+	pingPeriod     = (pongWait * 9) / 10 // Ping 間隔（必須小於 pongWait）約 13.5 秒
 	maxMessageSize = 512                 // 最大訊息大小
 )
 
@@ -29,6 +29,7 @@ func (c *Client) ReadPump() {
 	c.Conn.SetReadDeadline(time.Now().Add(pongWait))
 	c.Conn.SetReadLimit(maxMessageSize)
 	c.Conn.SetPongHandler(func(string) error {
+		// log.Printf("[Pong] Received (userID: %s, connID: %s)", c.UserID, c.ConnectionID)
 		c.Conn.SetReadDeadline(time.Now().Add(pongWait))
 		return nil
 	})
@@ -37,7 +38,9 @@ func (c *Client) ReadPump() {
 		_, message, err := c.Conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("WebSocket error: %v", err)
+				log.Printf("[WebSocket] Unexpected close (userID: %s, connID: %s): %v", c.UserID, c.ConnectionID, err)
+			} else {
+				log.Printf("[WebSocket] Connection closed normally (userID: %s, connID: %s)", c.UserID, c.ConnectionID)
 			}
 			break
 		}
@@ -83,8 +86,10 @@ func (c *Client) WritePump() {
 		case <-ticker.C:
 			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := c.Conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				log.Printf("[Ping] Failed to send ping (userID: %s, connID: %s): %v", c.UserID, c.ConnectionID, err)
 				return
 			}
+			// log.Printf("[Ping] Sent (userID: %s, connID: %s)", c.UserID, c.ConnectionID)
 		}
 	}
 }
