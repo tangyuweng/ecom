@@ -20,12 +20,13 @@ func NewMysqlCategoryRepository(db *gorm.DB) repository.CategoryRepository {
 }
 
 func (r *MysqlCategoryRepository) Create(ctx context.Context, category *entity.Category) error {
+	db := GetDB(ctx, r.db)
 	category.ID = uuid.NewString()
 
 	var model models.CategoryModel
 	model.ModelFromEntity(category)
 
-	if err := r.db.WithContext(ctx).Create(&model).Error; err != nil {
+	if err := db.Create(&model).Error; err != nil {
 		return err
 	}
 
@@ -34,9 +35,10 @@ func (r *MysqlCategoryRepository) Create(ctx context.Context, category *entity.C
 }
 
 func (r *MysqlCategoryRepository) FindByID(ctx context.Context, id string) (*entity.Category, error) {
+	db := GetDB(ctx, r.db)
 	var model models.CategoryModel
 
-	err := r.db.WithContext(ctx).Where("id = ?", id).First(&model).Error
+	err := db.Where("id = ?", id).First(&model).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, entity.ErrCategoryNotFound
@@ -48,9 +50,10 @@ func (r *MysqlCategoryRepository) FindByID(ctx context.Context, id string) (*ent
 }
 
 func (r *MysqlCategoryRepository) FindByName(ctx context.Context, name string) (*entity.Category, error) {
+	db := GetDB(ctx, r.db)
 	var model models.CategoryModel
 
-	err := r.db.WithContext(ctx).Where("name = ?", name).First(&model).Error
+	err := db.Where("name = ?", name).First(&model).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, entity.ErrCategoryNotFound
@@ -62,9 +65,10 @@ func (r *MysqlCategoryRepository) FindByName(ctx context.Context, name string) (
 }
 
 func (r *MysqlCategoryRepository) FindAll(ctx context.Context) ([]*entity.Category, error) {
+	db := GetDB(ctx, r.db)
 	var models []models.CategoryModel
 
-	err := r.db.WithContext(ctx).Find(&models).Error
+	err := db.Find(&models).Error
 	if err != nil {
 		return nil, err
 	}
@@ -78,14 +82,16 @@ func (r *MysqlCategoryRepository) FindAll(ctx context.Context) ([]*entity.Catego
 }
 
 func (r *MysqlCategoryRepository) Update(ctx context.Context, category *entity.Category) error {
+	db := GetDB(ctx, r.db)
 	var model models.CategoryModel
 	model.ModelFromEntity(category)
 
-	return r.db.WithContext(ctx).Save(&model).Error
+	return db.Save(&model).Error
 }
 
 func (r *MysqlCategoryRepository) Delete(ctx context.Context, id string) error {
-	result := r.db.WithContext(ctx).Delete(&models.CategoryModel{}, "id = ?", id)
+	db := GetDB(ctx, r.db)
+	result := db.Delete(&models.CategoryModel{}, "id = ?", id)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -98,10 +104,10 @@ func (r *MysqlCategoryRepository) Delete(ctx context.Context, id string) error {
 }
 
 func (r *MysqlCategoryRepository) ExistsByName(ctx context.Context, name string) (bool, error) {
+	db := GetDB(ctx, r.db)
 	var count int64
 
-	err := r.db.WithContext(ctx).
-		Model(&models.CategoryModel{}).
+	err := db.Model(&models.CategoryModel{}).
 		Where("name = ?", name).
 		Count(&count).Error
 

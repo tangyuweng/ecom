@@ -21,12 +21,13 @@ func NewUserRepository(db *gorm.DB) repository.UserRepository {
 }
 
 func (r *MysqlUserRepository) Create(ctx context.Context, user *entity.User) error {
+	db := GetDB(ctx, r.db)
 	user.ID = uuid.New().String()
 
 	var model models.UserModel
 	model.ModelFromEntity(user)
 
-	if err := r.db.WithContext(ctx).Create(&model).Error; err != nil {
+	if err := db.Create(&model).Error; err != nil {
 		return err
 	}
 
@@ -35,9 +36,10 @@ func (r *MysqlUserRepository) Create(ctx context.Context, user *entity.User) err
 }
 
 func (r *MysqlUserRepository) FindAll(ctx context.Context) ([]*entity.User, error) {
+	db := GetDB(ctx, r.db)
 	var models []models.UserModel
 
-	err := r.db.WithContext(ctx).Find(&models).Error
+	err := db.Find(&models).Error
 	if err != nil {
 		return nil, err
 	}
@@ -51,9 +53,10 @@ func (r *MysqlUserRepository) FindAll(ctx context.Context) ([]*entity.User, erro
 }
 
 func (r *MysqlUserRepository) FindByID(ctx context.Context, id string) (*entity.User, error) {
+	db := GetDB(ctx, r.db)
 	var model models.UserModel
 
-	err := r.db.WithContext(ctx).Where("id = ?", id).First(&model).Error
+	err := db.Where("id = ?", id).First(&model).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, entity.ErrUserNotFound
@@ -65,9 +68,10 @@ func (r *MysqlUserRepository) FindByID(ctx context.Context, id string) (*entity.
 }
 
 func (r *MysqlUserRepository) FindByEmail(ctx context.Context, email string) (*entity.User, error) {
+	db := GetDB(ctx, r.db)
 	var model models.UserModel
 
-	err := r.db.WithContext(ctx).Where("email = ?", email).First(&model).Error
+	err := db.Where("email = ?", email).First(&model).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, entity.ErrUserNotFound
@@ -79,9 +83,10 @@ func (r *MysqlUserRepository) FindByEmail(ctx context.Context, email string) (*e
 }
 
 func (r *MysqlUserRepository) FindByAdmin(ctx context.Context) ([]*entity.User, error) {
+	db := GetDB(ctx, r.db)
 	var models []models.UserModel
 
-	err := r.db.WithContext(ctx).Where("role = ?", "admin").Find(&models).Error
+	err := db.Where("role = ?", "admin").Find(&models).Error
 	if err != nil {
 		return nil, err
 	}
@@ -95,13 +100,15 @@ func (r *MysqlUserRepository) FindByAdmin(ctx context.Context) ([]*entity.User, 
 }
 
 func (r *MysqlUserRepository) Update(ctx context.Context, user *entity.User) error {
+	db := GetDB(ctx, r.db)
 	var model models.UserModel
 	model.ModelFromEntity(user)
-	return r.db.WithContext(ctx).Save(&model).Error
+	return db.Save(&model).Error
 }
 
 func (r *MysqlUserRepository) Delete(ctx context.Context, id string) error {
-	result := r.db.WithContext(ctx).Delete(&models.UserModel{}, "id = ?", id)
+	db := GetDB(ctx, r.db)
+	result := db.Delete(&models.UserModel{}, "id = ?", id)
 
 	if result.Error != nil {
 		return result.Error
@@ -115,10 +122,10 @@ func (r *MysqlUserRepository) Delete(ctx context.Context, id string) error {
 }
 
 func (r *MysqlUserRepository) ExistsByEmail(ctx context.Context, email string) (bool, error) {
+	db := GetDB(ctx, r.db)
 	var count int64
 
-	err := r.db.WithContext(ctx).
-		Model(&models.UserModel{}).
+	err := db.Model(&models.UserModel{}).
 		Where("email = ?", email).
 		Count(&count).Error
 

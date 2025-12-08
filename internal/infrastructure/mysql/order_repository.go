@@ -21,39 +21,39 @@ func NewMysqlOrderRepository(db *gorm.DB) repository.OrderRepository {
 
 // Order operations
 func (r *MysqlOrderRepository) Create(ctx context.Context, order *entity.Order) error {
-	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		order.ID = uuid.NewString()
+	db := GetDB(ctx, r.db)
 
-		var orderModel models.OrderModel
-		orderModel.ModelFromEntity(order)
+	order.ID = uuid.NewString()
 
-		if err := tx.Create(&orderModel).Error; err != nil {
-			return err
-		}
+	var orderModel models.OrderModel
+	orderModel.ModelFromEntity(order)
 
-		if len(order.Items) > 0 {
-			for _, item := range order.Items {
-				item.ID = uuid.NewString()
-				item.OrderID = order.ID
+	if err := db.Create(&orderModel).Error; err != nil {
+		return err
+	}
 
-				var itemModel models.OrderItemModel
-				itemModel.ModelFromEntity(item)
+	if len(order.Items) > 0 {
+		for _, item := range order.Items {
+			item.ID = uuid.NewString()
+			item.OrderID = order.ID
 
-				if err := tx.Create(&itemModel).Error; err != nil {
-					return err
-				}
+			var itemModel models.OrderItemModel
+			itemModel.ModelFromEntity(item)
+
+			if err := db.Create(&itemModel).Error; err != nil {
+				return err
 			}
 		}
+	}
 
-		return nil
-	})
+	return nil
 }
 
 func (r *MysqlOrderRepository) FindByID(ctx context.Context, orderID string) (*entity.Order, error) {
+	db := GetDB(ctx, r.db)
 	var model models.OrderModel
 
-	err := r.db.WithContext(ctx).
-		Preload("Items.Product.Category").
+	err := db.Preload("Items.Product.Category").
 		Where("id = ?", orderID).
 		First(&model).Error
 
@@ -68,10 +68,10 @@ func (r *MysqlOrderRepository) FindByID(ctx context.Context, orderID string) (*e
 }
 
 func (r *MysqlOrderRepository) FindByUserID(ctx context.Context, userID string) ([]*entity.Order, error) {
+	db := GetDB(ctx, r.db)
 	var models []models.OrderModel
 
-	err := r.db.WithContext(ctx).
-		Preload("Items.Product.Category").
+	err := db.Preload("Items.Product.Category").
 		Where("user_id = ?", userID).
 		Order("order_date DESC").
 		Find(&models).Error
@@ -92,7 +92,7 @@ func (r *MysqlOrderRepository) FindByQuery(ctx context.Context, query *entity.Or
 	var orderModels []models.OrderModel
 	var total int64
 
-	db := r.db.WithContext(ctx)
+	db := GetDB(ctx, r.db)
 
 	// 構建動態查詢條件
 	if query.Status != nil {
@@ -146,10 +146,11 @@ func (r *MysqlOrderRepository) FindByQuery(ctx context.Context, query *entity.Or
 }
 
 func (r *MysqlOrderRepository) Update(ctx context.Context, order *entity.Order) error {
+	db := GetDB(ctx, r.db)
 	var model models.OrderModel
 	model.ModelFromEntity(order)
 
-	result := r.db.WithContext(ctx).Model(&model).Updates(map[string]interface{}{
+	result := db.Model(&model).Updates(map[string]interface{}{
 		"status":           order.Status,
 		"shipping_address": order.ShippingAddress,
 		"recipient_name":   order.RecipientName,
@@ -169,26 +170,26 @@ func (r *MysqlOrderRepository) Update(ctx context.Context, order *entity.Order) 
 
 // OrderItem operations
 func (r *MysqlOrderRepository) CreateItems(ctx context.Context, items []*entity.OrderItem) error {
-	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		for _, item := range items {
-			item.ID = uuid.NewString()
+	db := GetDB(ctx, r.db)
 
-			var model models.OrderItemModel
-			model.ModelFromEntity(item)
+	for _, item := range items {
+		item.ID = uuid.NewString()
 
-			if err := tx.Create(&model).Error; err != nil {
-				return err
-			}
+		var model models.OrderItemModel
+		model.ModelFromEntity(item)
+
+		if err := db.Create(&model).Error; err != nil {
+			return err
 		}
-		return nil
-	})
+	}
+	return nil
 }
 
 func (r *MysqlOrderRepository) FindItemsByOrderID(ctx context.Context, orderID string) ([]*entity.OrderItem, error) {
+	db := GetDB(ctx, r.db)
 	var models []models.OrderItemModel
 
-	err := r.db.WithContext(ctx).
-		Preload("Product.Category").
+	err := db.Preload("Product.Category").
 		Where("order_id = ?", orderID).
 		Find(&models).Error
 

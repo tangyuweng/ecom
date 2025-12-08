@@ -134,6 +134,9 @@ func main() {
 		return
 	}
 
+	// 創建 TransactionManager
+	txManager := mysql.NewGormTransactionManager(db)
+
 	wsHub := websocket.NewHub()
 	go wsHub.Run()
 
@@ -150,7 +153,7 @@ func main() {
 	categoryUseCase := usecase.NewCategoryUseCase(categoryRepo, userRepo, productRepo)
 	productUseCase := usecase.NewProductUseCase(productRepo, categoryRepo, userRepo)
 	cartUseCase := usecase.NewCartUseCase(cartRepo, productRepo)
-	orderUseCase := usecase.NewOrderUseCase(orderRepo, cartRepo, productRepo, userRepo, notificationSvc)
+	orderUseCase := usecase.NewOrderUseCase(orderRepo, cartRepo, productRepo, userRepo, notificationSvc, txManager)
 
 	r := router.SetupRouter(authUseCase, userUseCase, categoryUseCase, productUseCase, cartUseCase, orderUseCase, jwtService, cfg, wsHub)
 
