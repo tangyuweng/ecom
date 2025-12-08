@@ -6,6 +6,8 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"github.com/tangyuweng/ecom/conf"
 	"github.com/tangyuweng/ecom/internal/application/usecase"
+	"github.com/tangyuweng/ecom/internal/domain/service"
+	ws "github.com/tangyuweng/ecom/internal/infrastructure/websocket"
 	"github.com/tangyuweng/ecom/internal/presentation/http/handler"
 	"github.com/tangyuweng/ecom/internal/presentation/http/middleware"
 )
@@ -17,8 +19,9 @@ func SetupRouter(
 	productUseCase *usecase.ProductUseCase,
 	cartUseCase *usecase.CartUseCase,
 	orderUseCase *usecase.OrderUseCase,
-	jwtService usecase.JWTService,
+	jwtService service.JWTService,
 	cfg *conf.Config,
+	hub *ws.Hub,
 ) *gin.Engine {
 	r := gin.Default()
 
@@ -30,11 +33,18 @@ func SetupRouter(
 	productHandler := handler.NewProductHandler(productUseCase)
 	cartHandler := handler.NewCartHandler(cartUseCase)
 	orderHandler := handler.NewOrderHandler(orderUseCase)
+	wsHandler := handler.NewWebsocketHandler(hub)
 
 	authMiddleware := middleware.AuthMiddleware(jwtService)
+	wsAuthMiddleware := middleware.WebSocketAuthMiddleware(jwtService)
 
 	v1 := r.Group("/api/v1")
 	{
+		ws := v1.Group("/ws")
+		{
+			ws.Use(wsAuthMiddleware)
+			ws.GET("/notify", wsHandler.HandlerNotfications)
+		}
 		auth := v1.Group("/auth")
 		{
 			auth.POST("/register", authHandler.Register)
@@ -89,8 +99,10 @@ func SetupRouter(
 			admin.PUT("/products/:id", productHandler.UpdateProduct)
 			admin.DELETE("/products/:id", productHandler.DeleteProduct)
 			admin.PATCH("/products/:id/stock", productHandler.UpdateProductStock)
+			admin.GET("/orders", orderHandler.GetAllOrders)
 			admin.PATCH("/orders/:id/status", orderHandler.UpdateOrderStatus)
 		}
+
 	}
 
 	return r

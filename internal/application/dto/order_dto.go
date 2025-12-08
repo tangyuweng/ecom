@@ -35,3 +35,21 @@ type OrderResponse struct {
 	CreatedAt       time.Time            `json:"created_at"`
 	UpdatedAt       time.Time            `json:"updated_at"`
 }
+
+type OrderListRequest struct {
+	Status    *string    `form:"status" binding:"omitempty,oneof=Pending Processing Shipped Completed Cancelled"`
+	UserID    *string    `form:"user_id"`
+	MinTotal  *float64   `form:"min_total" binding:"omitempty,min=0"`
+	MaxTotal  *float64   `form:"max_total" binding:"omitempty,min=0"`
+	StartDate *time.Time `form:"start_date" time_format:"2006-01-02"`
+	EndDate   *time.Time `form:"end_date" time_format:"2006-01-02"`
+	SortBy    string     `form:"sort_by" binding:"omitempty,oneof=order_date total_amount status created_at"`
+	SortOrder string     `form:"sort_order" binding:"omitempty,oneof=asc desc"`
+	Page      int        `form:"page" binding:"omitempty,min=1"`
+	PageSize  int        `form:"page_size" binding:"omitempty,min=1,max=100"`
+}
+
+type OrderListResponse struct {
+	Total  int              `json:"total"`
+	Orders []*OrderResponse `json:"orders"`
+}

@@ -20,12 +20,13 @@ func NewMysqlProductRepository(db *gorm.DB) repository.ProductRepository {
 }
 
 func (r *MysqlProductRepository) Create(ctx context.Context, product *entity.Product) error {
+	db := GetDB(ctx, r.db)
 	product.ID = uuid.NewString()
 
 	var model models.ProductModel
 	model.ModelFromEntity(product)
 
-	if err := r.db.WithContext(ctx).Create(&model).Error; err != nil {
+	if err := db.Create(&model).Error; err != nil {
 		return err
 	}
 
@@ -34,13 +35,15 @@ func (r *MysqlProductRepository) Create(ctx context.Context, product *entity.Pro
 }
 
 func (r *MysqlProductRepository) Update(ctx context.Context, product *entity.Product) error {
+	db := GetDB(ctx, r.db)
 	var model models.ProductModel
 	model.ModelFromEntity(product)
-	return r.db.WithContext(ctx).Save(&model).Error
+	return db.Save(&model).Error
 }
 
 func (r *MysqlProductRepository) Delete(ctx context.Context, id string) error {
-	result := r.db.WithContext(ctx).Delete(&models.ProductModel{}, "id = ?", id)
+	db := GetDB(ctx, r.db)
+	result := db.Delete(&models.ProductModel{}, "id = ?", id)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -53,9 +56,10 @@ func (r *MysqlProductRepository) Delete(ctx context.Context, id string) error {
 }
 
 func (r *MysqlProductRepository) FindByID(ctx context.Context, id string) (*entity.Product, error) {
+	db := GetDB(ctx, r.db)
 	var model models.ProductModel
 
-	err := r.db.WithContext(ctx).Preload("Category").Where("id = ?", id).First(&model).Error
+	err := db.Preload("Category").Where("id = ?", id).First(&model).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, entity.ErrProductNotFound
@@ -67,10 +71,10 @@ func (r *MysqlProductRepository) FindByID(ctx context.Context, id string) (*enti
 }
 
 func (r *MysqlProductRepository) FindByCategoryID(ctx context.Context, id string) ([]*entity.Product, error) {
+	db := GetDB(ctx, r.db)
 	var models []models.ProductModel
 
-	err := r.db.WithContext(ctx).
-		Preload("Category").
+	err := db.Preload("Category").
 		Where("category_id = ?", id).
 		Find(&models).Error
 	if err != nil {
@@ -89,7 +93,7 @@ func (r *MysqlProductRepository) FindByQuery(ctx context.Context, query *entity.
 	var productModels []*models.ProductModel
 	var total int64
 
-	db := r.db.WithContext(ctx)
+	db := GetDB(ctx, r.db)
 
 	if query.Name != nil && *query.Name != "" {
 		db = db.Where("name LIKE ?", "%"+*query.Name+"%")
@@ -136,10 +140,10 @@ func (r *MysqlProductRepository) FindByQuery(ctx context.Context, query *entity.
 
 // 刪除 Category 前先檢查是否有商品使用此類別
 func (r *MysqlProductRepository) ExistsByCategoryID(ctx context.Context, categoryID string) (bool, error) {
+	db := GetDB(ctx, r.db)
 	var count int64
 
-	err := r.db.WithContext(ctx).
-		Model(&models.ProductModel{}).
+	err := db.Model(&models.ProductModel{}).
 		Where("category_id = ?", categoryID).
 		Count(&count).Error
 

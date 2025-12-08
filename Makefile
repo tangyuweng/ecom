@@ -41,4 +41,21 @@ docker-run:
 docker-stop:
 	docker-compose down
 
-.PHONY: swagger build run migrate-up migrate-down migrate-step-up migrate-step-down migrate-create migrate-status migrate-force seed docker-run docker-stop
+# Testing commands
+test:
+	go test -v ./...
+
+test-unit:
+	go test -v ./internal/application/...
+
+test-integration:
+	go test -v ./internal/infrastructure/...
+
+test-coverage:
+	go test -cover ./...
+
+test-coverage-report:
+	go test -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out
+
+.PHONY: swagger build run migrate-up migrate-down migrate-step-up migrate-step-down migrate-create migrate-status migrate-force seed docker-run docker-stop test test-unit test-integration test-coverage test-coverage-report
