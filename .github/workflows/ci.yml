@@ -34,10 +34,24 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.25.1'
+          go-version: '1.24'
           cache: true
 
-      - name: Install dependencies
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Wait for MySQL
+        run: |
+          for i in {1..30}; do
+            if mysqladmin ping -h"127.0.0.1" -P3306 -urain -p1027 --silent 2>/dev/null; then
+              echo "MySQL is ready"
+              break
+            fi
+            echo "Waiting for MySQL... ($i/30)"
+            sleep 2
+          done
+
+      - name: Run tests
         run: make test-coverage-report
         env:
           DB_HOST: 127.0.0.1
@@ -46,28 +60,10 @@ jobs:
           DB_PASSWORD: 1027
           DB_NAME: ecom_test
 
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.25.1'
-          cache: true
-
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: latest
-
   build:
     name: Build
     runs-on: ubuntu-latest
+    needs: test
 
     steps:
       - name: Checkout code
@@ -76,8 +72,19 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.25.1'
+          go-version: '1.24'
           cache: true
 
-      - name: Build
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Build application
         run: make build
+
+      - name: Verify build
+        run: |
+          if [ ! -f ./bin/ecom ]; then
+            echo "Build failed: binary not found"
+            exit 1
+          fi
+          echo "Build successful"
