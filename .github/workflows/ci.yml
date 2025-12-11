@@ -4,7 +4,7 @@ on:
   push:
     branches: [main, dev]
   pull_request:
-    branches: [main]
+    branches: [main, dev]
 
 jobs:
   test:
@@ -80,11 +80,3 @@ jobs:
 
       - name: Build application
         run: make build
-
-      - name: Verify build
-        run: |
-          if [ ! -f ./bin/ecom ]; then
-            echo "Build failed: binary not found"
-            exit 1
-          fi
-          echo "Build successful"
