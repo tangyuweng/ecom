@@ -119,7 +119,7 @@ func main() {
 		return
 	}
 
-	userRepo := mysql.NewUserRepository(db)
+	userRepo := mysql.NewMysqlUserRepository(db)
 	categoryRepo := mysql.NewMysqlCategoryRepository(db)
 	productRepo := mysql.NewMysqlProductRepository(db)
 	cartRepo := mysql.NewMysqlCartRepository(db)
