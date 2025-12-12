@@ -1,3 +1,6 @@
+# ==================== Build Targets ====================
+.PHONY:	swagger	build	run
+
 swagger:
 	swag init -g cmd/api/main.go -o docs
 
@@ -6,6 +9,10 @@ build:
 
 run: build
 	bin/api
+
+# ==================== Migration Targets ====================
+.PHONY: migrate-up migrate-down migrate-step-up migrate-step-down
+.PHONY: migrate-create migrate-status migrate-force
 
 migrate-up: build
 	bin/api -migrate-up
@@ -32,8 +39,14 @@ migrate-force: build
 	@read -p "Force migration to version (current dirty version): " version; \
 	bin/api -migrate-force=$$version
 
+# ==================== Data Targets ====================
+.PHONY: seed
+
 seed: build
 	bin/api -seed
+
+# ==================== Docker Targets ====================
+.PHONY: docker-run docker-stop test-db-up test-db-down
 
 docker-run:
 	docker-compose up -d
@@ -41,7 +54,15 @@ docker-run:
 docker-stop:
 	docker-compose down
 
-# Testing commands
+test-db-up:
+	docker-compose --profile test up -d mysql-test
+
+test-db-down:
+	docker-compose --profile test down
+
+# ==================== Test Targets ====================
+.PHONY: test test-unit test-integration test-coverage test-coverage-report
+
 test:
 	go test -v ./...
 
@@ -57,5 +78,3 @@ test-coverage:
 test-coverage-report:
 	go test -coverprofile=coverage.out ./...
 	go tool cover -html=coverage.out
-
-.PHONY: swagger build run migrate-up migrate-down migrate-step-up migrate-step-down migrate-create migrate-status migrate-force seed docker-run docker-stop test test-unit test-integration test-coverage test-coverage-report
