@@ -15,12 +15,10 @@ jobs:
       mysql:
         image: mysql:8.0
         env:
-          MYSQL_ROOT_PASSWORD: root
+          MYSQL_ROOT_PASSWORD: password
           MYSQL_DATABASE: ecom_test
-          MYSQL_USER: rain
-          MYSQL_PASSWORD: 1027
         ports:
-          - 3306:3306
+          - 3308:3306
         options: >-
           --health-cmd="mysqladmin ping -h localhost"
           --health-interval=10s
@@ -43,7 +41,7 @@ jobs:
       - name: Wait for MySQL
         run: |
           for i in {1..30}; do
-            if mysqladmin ping -h"127.0.0.1" -P3306 -urain -p1027 --silent 2>/dev/null; then
+            if mysqladmin ping -h"127.0.0.1" -P3308 -uroot -ppassword --silent 2>/dev/null; then
               echo "MySQL is ready"
               break
             fi
@@ -55,9 +53,9 @@ jobs:
         run: make test-coverage-report
         env:
           DB_HOST: 127.0.0.1
-          DB_PORT: 3306
-          DB_USER: rain
-          DB_PASSWORD: 1027
+          DB_PORT: 3308
+          DB_USER: root
+          DB_PASSWORD: password
           DB_NAME: ecom_test
 
   build:
