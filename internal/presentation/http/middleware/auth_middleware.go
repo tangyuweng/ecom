@@ -27,14 +27,14 @@ func AuthMiddleware(jwtService service.JWTService) gin.HandlerFunc {
 
 		tokenString := parts[1]
 
-		userID, err := jwtService.ValidateToken(tokenString)
+		tokenDetails, err := jwtService.ValidateToken(c.Request.Context(), tokenString)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, dto.ErrorResponse("invalid or expired token"))
+			c.JSON(http.StatusUnauthorized, dto.ErrorResponse(err.Error()))
 			c.Abort()
 			return
 		}
 
-		c.Set("userID", userID)
+		c.Set("userID", tokenDetails.UserID)
 		c.Next()
 	}
 }

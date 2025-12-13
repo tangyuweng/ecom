@@ -116,12 +116,17 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 
 // Logout godoc
 // @Summary      用戶登出
-// @Description  清除 refresh token cookie
+// @Description  清除 refresh token 加入黑名單並清除 cookie
 // @Tags         auth
 // @Produce      json
 // @Success      200 {object} dto.StandardResponse "登出成功"
 // @Router       /auth/logout [post]
 func (h *AuthHandler) Logout(c *gin.Context) {
+	refreshToken, err := c.Cookie("refresh_token")
+	if err == nil && refreshToken != "" {
+		_ = h.authUseCase.Logout(c.Request.Context(), refreshToken)
+	}
+
 	c.SetCookie(
 		"refresh_token",
 		"",

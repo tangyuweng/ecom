@@ -9,6 +9,7 @@ import (
 	"github.com/tangyuweng/ecom/conf"
 	_ "github.com/tangyuweng/ecom/docs"
 	"github.com/tangyuweng/ecom/internal/application/usecase"
+	"github.com/tangyuweng/ecom/internal/infrastructure/cache"
 	"github.com/tangyuweng/ecom/internal/infrastructure/jwt"
 	"github.com/tangyuweng/ecom/internal/infrastructure/mysql"
 	"github.com/tangyuweng/ecom/internal/infrastructure/seed"
@@ -58,6 +59,11 @@ func main() {
 	})
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
+	}
+
+	redisClient, err := cache.NewRedisClient(cfg)
+	if err != nil {
+		log.Fatalf("Failed to connect to redis: %v", err)
 	}
 
 	migrator, err := mysql.NewMigrator(db, "internal/infrastructure/mysql/migrations")
@@ -124,6 +130,7 @@ func main() {
 	productRepo := mysql.NewMysqlProductRepository(db)
 	cartRepo := mysql.NewMysqlCartRepository(db)
 	orderRepo := mysql.NewMysqlOrderRepository(db)
+	tokenRepo := cache.NewTokenRepository(redisClient)
 
 	if *shouldSeed {
 		seeder := seed.NewSeeder(userRepo, categoryRepo, productRepo)
@@ -146,9 +153,10 @@ func main() {
 		cfg.JWT.Secret,
 		time.Duration(cfg.JWT.AccessTokenExpiry)*time.Hour,
 		time.Duration(cfg.JWT.RefreshTokenExpiry)*time.Hour,
+		tokenRepo,
 	)
 
-	authUseCase := usecase.NewAuthUseCase(userRepo, jwtService)
+	authUseCase := usecase.NewAuthUseCase(userRepo, tokenRepo, jwtService)
 	userUseCase := usecase.NewUserUseCase(userRepo)
 	categoryUseCase := usecase.NewCategoryUseCase(categoryRepo, userRepo, productRepo)
 	productUseCase := usecase.NewProductUseCase(productRepo, categoryRepo, userRepo)

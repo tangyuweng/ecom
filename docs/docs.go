@@ -985,7 +985,7 @@ const docTemplate = `{
         },
         "/auth/logout": {
             "post": {
-                "description": "清除 refresh token cookie",
+                "description": "清除 refresh token 加入黑名單並清除 cookie",
                 "produces": [
                     "application/json"
                 ],

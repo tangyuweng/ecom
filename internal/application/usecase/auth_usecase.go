@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/tangyuweng/ecom/internal/application/dto"
 	"github.com/tangyuweng/ecom/internal/domain/entity"
@@ -11,14 +12,16 @@ import (
 )
 
 type AuthUseCase struct {
-	userRepo repository.UserRepository
-	jwtSvc   service.JWTService
+	userRepo  repository.UserRepository
+	tokenRepo repository.TokenRepository
+	jwtSvc    service.JWTService
 }
 
-func NewAuthUseCase(userRepo repository.UserRepository, jwtSvc service.JWTService) *AuthUseCase {
+func NewAuthUseCase(userRepo repository.UserRepository, tokenRepo repository.TokenRepository, jwtSvc service.JWTService) *AuthUseCase {
 	return &AuthUseCase{
-		userRepo: userRepo,
-		jwtSvc:   jwtSvc,
+		userRepo:  userRepo,
+		tokenRepo: tokenRepo,
+		jwtSvc:    jwtSvc,
 	}
 }
 
@@ -37,6 +40,10 @@ func (uc *AuthUseCase) Register(ctx context.Context, req dto.RegisterRequest) (*
 	}
 
 	if err := uc.userRepo.Create(ctx, user); err != nil {
+		return nil, err
+	}
+
+	if err := uc.tokenRepo.SetUserVersion(ctx, user.ID, 0); err != nil {
 		return nil, err
 	}
 
@@ -61,12 +68,17 @@ func (uc *AuthUseCase) Login(ctx context.Context, req dto.LoginRequest) (*dto.Lo
 		return nil, entity.ErrInvalidCredentials
 	}
 
-	accessToken, err := uc.jwtSvc.GenerateAccessToken(user.ID)
+	version, err := uc.tokenRepo.GetUserVersion(ctx, user.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	refreshToken, err := uc.jwtSvc.GenerateRefreshToken(user.ID)
+	accessToken, err := uc.jwtSvc.GenerateAccessToken(user.ID, version)
+	if err != nil {
+		return nil, err
+	}
+
+	refreshToken, err := uc.jwtSvc.GenerateRefreshToken(user.ID, version)
 	if err != nil {
 		return nil, err
 	}
@@ -85,20 +97,38 @@ func (uc *AuthUseCase) Login(ctx context.Context, req dto.LoginRequest) (*dto.Lo
 }
 
 func (uc *AuthUseCase) RefreshToken(ctx context.Context, refreshToken string) (*dto.RefreshTokenResponse, error) {
-	userID, err := uc.jwtSvc.ValidateToken(refreshToken)
+	tokenDetails, err := uc.jwtSvc.ValidateToken(ctx, refreshToken)
 	if err != nil {
-		return nil, errors.New("invalid or expired refresh token")
+		return nil, err
 	}
 
-	_, err = uc.userRepo.FindByID(ctx, userID)
+	_, err = uc.userRepo.FindByID(ctx, tokenDetails.UserID)
 	if err != nil {
 		return nil, entity.ErrUserNotFound
 	}
 
-	newAccessToken, err := uc.jwtSvc.GenerateAccessToken(userID)
+	newAccessToken, err := uc.jwtSvc.GenerateAccessToken(tokenDetails.UserID, tokenDetails.Version)
 	if err != nil {
 		return nil, err
 	}
 
 	return &dto.RefreshTokenResponse{AccessToken: newAccessToken}, nil
+}
+
+func (uc *AuthUseCase) Logout(ctx context.Context, refreshToken string) error {
+	tokenDetails, err := uc.jwtSvc.ValidateTokenBasic(refreshToken)
+	if err != nil {
+		return nil
+	}
+
+	ttl := time.Until(tokenDetails.ExpiresAt)
+	if ttl <= 0 {
+		return nil // token 已過期，無須加入黑名單
+	}
+
+	return uc.tokenRepo.AddToBlacklist(ctx, tokenDetails.JTI, ttl)
+}
+
+func (uc *AuthUseCase) LogoutAll(ctx context.Context, userID string) error {
+	return uc.tokenRepo.IncrementUserVersion(ctx, userID)
 }
