@@ -20,14 +20,14 @@ func WebSocketAuthMiddleware(jwtService service.JWTService) gin.HandlerFunc {
 			return
 		}
 
-		userID, err := jwtService.ValidateToken(tokenString)
+		tokenDetails, err := jwtService.ValidateTokenBasic(tokenString)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, dto.ErrorResponse("invalid or expired token"))
+			c.JSON(http.StatusUnauthorized, dto.ErrorResponse(err.Error()))
 			c.Abort()
 			return
 		}
 
-		c.Set("userID", userID)
+		c.Set("userID", tokenDetails.UserID)
 		c.Next()
 	}
 }

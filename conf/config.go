@@ -13,6 +13,7 @@ type Config struct {
 	JWT    JWTConfig
 	MySQL  MySQLConfig
 	Cookie CookieConfig
+	Redis  RedisConfig
 }
 
 type ServerConfig struct {
@@ -38,6 +39,13 @@ type CookieConfig struct {
 	Secure bool
 }
 
+type RedisConfig struct {
+	Host     string
+	Port     string
+	Password string
+	DB       int
+}
+
 func LoadConfig() (*Config, error) {
 	if err := godotenv.Load(); err != nil {
 		log.Println("Warning: .env file not found, using system environment variables")
@@ -56,6 +64,11 @@ func LoadConfig() (*Config, error) {
 	refreshTokenExpiry, err := strconv.Atoi(getEnv("JWT_REFRESH_TOKE_EXP", "72"))
 	if err != nil {
 		refreshTokenExpiry = 72
+	}
+
+	redisDB, err := strconv.Atoi(getEnv("REDIS_DB", "0"))
+	if err != nil {
+		redisDB = 0
 	}
 
 	config := &Config{
@@ -77,6 +90,12 @@ func LoadConfig() (*Config, error) {
 		Cookie: CookieConfig{
 			Domain: getEnv("COOKIE_DOMAIN", "localhost"),
 			Secure: getEnv("COOKIE_SECURE", "false") == "true",
+		},
+		Redis: RedisConfig{
+			Host:     getEnv("REDIS_HOST", "localhost"),
+			Port:     getEnv("REDIS_PORT", "6379"),
+			Password: getEnv("REDIS_PASSWORD", ""),
+			DB:       redisDB,
 		},
 	}
 

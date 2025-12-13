@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/stretchr/testify/mock"
 	"github.com/tangyuweng/ecom/internal/domain/entity"
@@ -231,4 +232,33 @@ func (m *MockUserRepository) FindByAdmin(ctx context.Context) ([]*entity.User, e
 func (m *MockUserRepository) ExistsByEmail(ctx context.Context, email string) (bool, error) {
 	args := m.Called(ctx, email)
 	return args.Bool(0), args.Error(1)
+}
+
+type MockTokenRepository struct {
+	mock.Mock
+}
+
+func (m *MockTokenRepository) AddToBlacklist(ctx context.Context, jti string, ttl time.Duration) error {
+	args := m.Called(ctx, jti, ttl)
+	return args.Error(0)
+}
+
+func (m *MockTokenRepository) IsBlacklisted(ctx context.Context, jti string) (bool, error) {
+	args := m.Called(ctx, jti)
+	return args.Bool(0), args.Error(1)
+}
+
+func (m *MockTokenRepository) GetUserVersion(ctx context.Context, userID string) (int, error) {
+	args := m.Called(ctx, userID)
+	return args.Int(0), args.Error(1)
+}
+
+func (m *MockTokenRepository) IncrementUserVersion(ctx context.Context, userID string) error {
+	args := m.Called(ctx, userID)
+	return args.Error(0)
+}
+
+func (m *MockTokenRepository) SetUserVersion(ctx context.Context, userID string, version int) error {
+	args := m.Called(ctx, userID, version)
+	return args.Error(0)
 }
